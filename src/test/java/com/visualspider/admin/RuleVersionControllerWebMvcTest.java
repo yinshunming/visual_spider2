@@ -6,6 +6,8 @@ import com.visualspider.persistence.CrawlRuleVersionMapper;
 import com.visualspider.persistence.CrawlSelectorCandidateMapper;
 import com.visualspider.persistence.DatabaseProbeMapper;
 import com.visualspider.persistence.PagePreviewSessionMapper;
+import com.visualspider.persistence.ArticleMapper;
+import com.visualspider.persistence.RuleArticleMappingMapper;
 import com.visualspider.persistence.RulePreviewFieldResultMapper;
 import com.visualspider.persistence.RulePreviewRunMapper;
 import com.visualspider.runtime.RuleVersionService;
@@ -59,6 +61,12 @@ class RuleVersionControllerWebMvcTest {
 
     @MockBean
     private RulePreviewFieldResultMapper rulePreviewFieldResultMapper;
+
+    @MockBean
+    private ArticleMapper articleMapper;
+
+    @MockBean
+    private RuleArticleMappingMapper ruleArticleMappingMapper;
 
     @Test
     void shouldRenderVersionPage() throws Exception {

@@ -67,6 +67,7 @@
         </p>
         <p class="muted" th:if="${versionPage.draftVersionId() != null}"
            th:text="${'当前草稿版本：v' + versionPage.draftVersionNo() + ' (' + versionPage.draftStatus() + ')'}"></p>
+        <p><a th:href="@{/admin/rules/{ruleId}/article-mappings(ruleId=${versionPage.ruleId()})}">配置 article 映射</a></p>
     </section>
 
     <section class="card">

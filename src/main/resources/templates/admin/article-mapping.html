@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Article 映射</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: "Segoe UI", "PingFang SC", sans-serif;
+            background: #f6f1e8;
+            color: #1f2937;
+        }
+
+        .shell {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 24px 20px 64px;
+        }
+
+        .card {
+            background: #fffdfa;
+            border: 1px solid #d8c9b8;
+            border-radius: 18px;
+            padding: 24px;
+            margin-bottom: 18px;
+            box-shadow: 0 12px 40px rgba(139, 94, 52, 0.08);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 10px 8px;
+            border-bottom: 1px solid #eadfce;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #d8c9b8;
+            border-radius: 10px;
+        }
+
+        button {
+            margin-top: 14px;
+            padding: 10px 14px;
+            border: 0;
+            border-radius: 10px;
+            background: #8b5e34;
+            color: #fff;
+            cursor: pointer;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+<main class="shell">
+    <section class="card">
+        <h1>Article 映射</h1>
+        <p th:text="${mappingPage.ruleName()} + ' · 已发布版本 v' + ${mappingPage.publishedVersionNo()}"></p>
+        <p><a th:href="@{/admin/rules/{ruleId}/versions(ruleId=${mappingPage.ruleId()})}">返回版本历史</a></p>
+        <p th:if="${mappingPage.lastRunMessage()}" th:text="${mappingPage.lastRunMessage()}"></p>
+    </section>
+
+    <section class="card">
+        <form method="post" th:action="@{/admin/rules/{ruleId}/article-mappings(ruleId=${mappingPage.ruleId()})}" th:object="${mappingForm}">
+            <table>
+                <thead>
+                <tr>
+                    <th>Article 列</th>
+                    <th>规则字段</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>`source_url`</td>
+                    <td><select th:field="*{sourceUrlFieldId}"><option value="">未映射</option><option th:each="field : ${mappingPage.fieldOptions()}" th:value="${field.fieldId()}" th:text="${field.fieldName()} + ' (' + ${field.fieldType()} + ')'"></option></select></td>
+                </tr>
+                <tr>
+                    <td>`title`</td>
+                    <td><select th:field="*{titleFieldId}"><option value="">未映射</option><option th:each="field : ${mappingPage.fieldOptions()}" th:value="${field.fieldId()}" th:text="${field.fieldName()} + ' (' + ${field.fieldType()} + ')'"></option></select></td>
+                </tr>
+                <tr>
+                    <td>`author`</td>
+                    <td><select th:field="*{authorFieldId}"><option value="">未映射</option><option th:each="field : ${mappingPage.fieldOptions()}" th:value="${field.fieldId()}" th:text="${field.fieldName()} + ' (' + ${field.fieldType()} + ')'"></option></select></td>
+                </tr>
+                <tr>
+                    <td>`published_at`</td>
+                    <td><select th:field="*{publishedAtFieldId}"><option value="">未映射</option><option th:each="field : ${mappingPage.fieldOptions()}" th:value="${field.fieldId()}" th:text="${field.fieldName()} + ' (' + ${field.fieldType()} + ')'"></option></select></td>
+                </tr>
+                <tr>
+                    <td>`summary`</td>
+                    <td><select th:field="*{summaryFieldId}"><option value="">未映射</option><option th:each="field : ${mappingPage.fieldOptions()}" th:value="${field.fieldId()}" th:text="${field.fieldName()} + ' (' + ${field.fieldType()} + ')'"></option></select></td>
+                </tr>
+                <tr>
+                    <td>`content`</td>
+                    <td><select th:field="*{contentFieldId}"><option value="">未映射</option><option th:each="field : ${mappingPage.fieldOptions()}" th:value="${field.fieldId()}" th:text="${field.fieldName()} + ' (' + ${field.fieldType()} + ')'"></option></select></td>
+                </tr>
+                <tr>
+                    <td>`cover_image`</td>
+                    <td><select th:field="*{coverImageFieldId}"><option value="">未映射</option><option th:each="field : ${mappingPage.fieldOptions()}" th:value="${field.fieldId()}" th:text="${field.fieldName()} + ' (' + ${field.fieldType()} + ')'"></option></select></td>
+                </tr>
+                </tbody>
+            </table>
+            <button type="submit">保存字段映射</button>
+        </form>
+
+        <form method="post" th:action="@{/admin/rules/{ruleId}/article-mappings/run(ruleId=${mappingPage.ruleId()})}">
+            <button type="submit">执行一次入库</button>
+        </form>
+    </section>
+</main>
+</body>
+</html>

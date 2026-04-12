@@ -608,7 +608,7 @@ selector 候选生成策略摘要：
 
 ### M6 映射到 `article` 表
 
-状态：`planned`
+状态：`done`
 
 目标：
 
@@ -641,6 +641,81 @@ selector 候选生成策略摘要：
 - `article` 表结构
 - 字段映射规则
 - 去重策略说明
+
+本次实现结果：
+
+- 新增 `article` 表和 `rule_article_mapping` 表，并补充 migration `V6__create_article_and_mapping.sql`
+- 新增 `ArticleMappingService`，负责读取已发布规则版本并保存字段到 `article` 列的映射关系
+- 新增 `ArticleIngestionService`，负责基于已发布版本和映射关系执行一次性抽取入库
+- 新增 `ArticleMappingController` 和 [article-mapping.html](/D:/opencodeSpace/visual_spider2/src/main/resources/templates/admin/article-mapping.html)，支持保存映射和执行一次入库
+- 在版本历史页增加 “配置 article 映射” 入口，形成 M5 -> M6 的直接流转
+- 已实现最小 `insert/update` 语义：按 `source_url` 去重，首次插入，后续重复执行走更新而不是重复插入
+
+`article` 表结构：
+
+- `id`
+- `source_url`
+- `title`
+- `author`
+- `published_at`
+- `summary`
+- `content`
+- `cover_image`
+- `created_at`
+- `updated_at`
+
+字段映射规则：
+
+- 当前映射关系绑定到“已发布版本”上，而不是草稿版本
+- 每个 `article` 列最多映射一个规则字段
+- 当前支持的映射目标列：
+  - `source_url`
+  - `title`
+  - `author`
+  - `published_at`
+  - `summary`
+  - `content`
+  - `cover_image`
+
+去重策略说明：
+
+- 当前按 `source_url` 唯一键去重
+- 如果 `source_url` 已存在，则执行更新
+- 如果 `source_url` 不存在，则执行插入
+- 若没有配置或没有成功抽取 `source_url`，会直接报错并阻止入库
+
+验收记录：
+
+- `mvn test` 通过，当前总计 20 个自动化测试通过
+- `mvn -q -DskipTests compile` 通过
+- 新增 `ArticleMappingControllerWebMvcTest`，覆盖映射页渲染和保存映射
+- 新增 `ArticleIngestionServiceTest`，覆盖首次插入 article 的服务逻辑
+- 手工验证中，已发布规则版本的 article 映射保存成功
+- 手工验证中，第一次执行入库后 `article` 表新增 1 条记录
+- 手工验证中，再执行一次入库后 `article` 总记录数仍为 1，符合最小去重要求
+
+实际手工验证路径：
+
+1. 执行 `docker compose up -d postgres`
+2. 执行 `mvn spring-boot:run`
+3. 创建一个规则并至少发布一个版本
+4. 访问 `/admin/rules/{ruleId}/article-mappings`
+5. 配置至少两个映射：
+   - `source_url`
+   - `title`
+6. 点击“保存字段映射”
+7. 点击“执行一次入库”
+8. 在 PostgreSQL 中执行：
+   `select id, source_url, title from article order by id desc limit 5;`
+   确认已插入 article 记录
+9. 再点击一次“执行一次入库”
+10. 在 PostgreSQL 中执行：
+    `select count(*) as article_count from article;`
+    确认记录数未继续增长
+
+偏差说明：
+
+- 当前 M6 采用最保守的 `source_url` 去重策略，并且只允许基于“已发布版本”执行正式入库；更复杂的唯一键配置和批量入库策略留到后续阶段
 
 ### M7 Quartz 定时抓取、运行日志与页面快照
 
