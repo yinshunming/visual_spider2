@@ -131,13 +131,20 @@
             font-weight: 600;
             word-break: break-all;
         }
+
+        img {
+            width: 100%;
+            margin-top: 14px;
+            border-radius: 14px;
+            border: 1px solid var(--line);
+        }
     </style>
 </head>
 <body>
 <main class="shell">
     <section class="hero">
         <h1>Visual Spider MVP Console</h1>
-        <p>M1 已搭起单体应用基础骨架。这里提供后台首页、数据库健康探针，以及一个最小的 Playwright 页面标题探测入口。</p>
+        <p>M2 聚焦 URL 输入与页面加载预览。这里可以打开真实页面，记录一次调试会话，并展示标题、最终 URL、加载耗时和截图。</p>
         <a href="/healthz">查看健康检查</a>
         <div th:classappend="${databaseOk} ? 'status ok' : 'status bad'" class="status">
             <span th:text="${databaseOk} ? '数据库连通' : '数据库未连通'"></span>
@@ -146,29 +153,38 @@
 
     <section class="grid">
         <article class="card">
-            <h2>Playwright 演示</h2>
+            <h2>页面加载预览</h2>
             <form method="post" th:action="@{/admin/playwright-demo}" th:object="${probeForm}">
                 <label for="url">页面 URL</label>
-                <input id="url" type="text" th:field="*{url}" placeholder="https://example.com">
-                <button type="submit">打开页面并读取标题</button>
+                <input id="url" type="text" th:field="*{url}" placeholder="https://www.sina.com.cn">
+                <button type="submit">打开页面并生成预览</button>
             </form>
             <div class="error" th:if="${validationError}" th:text="${validationError}"></div>
             <div class="error" th:if="${probeError}" th:text="${probeError}"></div>
             <p class="hint">首次运行前如果尚未安装浏览器，可执行：<code>mvn org.codehaus.mojo:exec-maven-plugin:3.5.0:java -Dexec.mainClass=com.microsoft.playwright.CLI -Dexec.args="install chromium"</code></p>
         </article>
 
-        <article class="card" th:if="${probeResult}">
-            <h2>探测结果</h2>
+        <article class="card" th:if="${previewSession}">
+            <h2>预览结果</h2>
             <dl>
+                <dt>会话 ID</dt>
+                <dd th:text="${previewSession.id()}"></dd>
                 <dt>请求 URL</dt>
-                <dd th:text="${probeResult.requestedUrl()}"></dd>
+                <dd th:text="${previewSession.requestedUrl()}"></dd>
                 <dt>最终 URL</dt>
-                <dd th:text="${probeResult.finalUrl()}"></dd>
+                <dd th:text="${previewSession.finalUrl()} ?: '-'"></dd>
                 <dt>页面标题</dt>
-                <dd th:text="${probeResult.title()}"></dd>
+                <dd th:text="${previewSession.pageTitle()} ?: '-'"></dd>
                 <dt>耗时</dt>
-                <dd th:text="${probeResult.durationMs()} + ' ms'"></dd>
+                <dd th:text="${previewSession.loadDurationMs()} != null ? ${previewSession.loadDurationMs()} + ' ms' : '-'"></dd>
+                <dt>状态</dt>
+                <dd th:text="${previewSession.status()}"></dd>
+                <dt th:if="${previewSession.screenshotUrl()}">截图</dt>
+                <dd th:if="${previewSession.screenshotUrl()}">
+                    <a th:href="${previewSession.screenshotUrl()}" target="_blank">打开原图</a>
+                </dd>
             </dl>
+            <img th:if="${previewSession.screenshotUrl()}" th:src="${previewSession.screenshotUrl()}" alt="页面预览截图">
         </article>
     </section>
 </main>

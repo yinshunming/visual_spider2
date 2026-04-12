@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 public class PageProbeForm {
 
     @NotBlank(message = "URL 不能为空")
-    private String url = "https://example.com";
+    private String url = "https://www.sina.com.cn";
 
     public String getUrl() {
         return url;
@@ -15,4 +15,3 @@ public class PageProbeForm {
         this.url = url;
     }
 }
-

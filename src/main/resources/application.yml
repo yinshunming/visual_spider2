@@ -28,6 +28,8 @@ app:
     browser: chromium
     timeout-ms: 15000
     headless: true
+  snapshot:
+    storage-root: snapshots
 
 logging:
   level:

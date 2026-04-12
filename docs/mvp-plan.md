@@ -200,7 +200,7 @@ migration 列表：
 - 使用 `docker compose up -d postgres` 启动 PostgreSQL 17 容器成功
 - 使用默认 profile 启动应用后，`/healthz` 返回 `200`，数据库状态为 `UP`
 - 访问 `/admin` 返回 `200`
-- 通过 `/admin/playwright-demo` 探测 `https://example.com` 成功，页面标题命中 `Example Domain`
+- 通过 `/admin/playwright-demo` 探测 `https://www.sina.com.cn` 成功，页面成功返回标题
 - 应用日志确认 Quartz 示例任务执行成功：`Bootstrap Quartz job executed successfully.`
 
 实际手工验证路径：
@@ -210,7 +210,7 @@ migration 列表：
 3. 执行 `mvn spring-boot:run`
 4. 访问 `http://localhost:8080/healthz`，确认返回 `status=UP`
 5. 访问 `http://localhost:8080/admin`
-6. 在后台页输入 `https://example.com`，确认能返回页面标题 `Example Domain`
+6. 在后台页输入 `https://www.sina.com.cn`，确认能返回页面标题
 7. 查看启动日志，确认出现 `Bootstrap Quartz job executed successfully.`
 
 编译与启动结果：
@@ -225,7 +225,7 @@ migration 列表：
 
 ### M2 URL 输入与页面加载预览
 
-状态：`planned`
+状态：`done`
 
 目标：
 
@@ -257,6 +257,61 @@ migration 列表：
 - 支持的 URL 输入约束
 - 页面加载失败场景说明
 - 预览页截图或界面说明
+
+本次实现结果：
+
+- 复用 M1 的 `/admin` 页面，扩展为 M2 的 URL 输入与页面加载预览入口
+- 新增 `page_preview_session` 表，并通过 MyBatis 持久化每次页面预览会话
+- `PlaywrightService` 扩展为支持真实页面打开、标题采集、最终 URL 采集、耗时统计和全页截图保存
+- 新增 `PagePreviewSessionService`，负责把 Playwright 结果写入数据库并组装页面展示模型
+- 新增截图访问入口 `/admin/preview-sessions/{id}/screenshot`
+- 预览成功时在页面展示会话 ID、请求 URL、最终 URL、标题、耗时、状态和截图
+- 预览失败时会写入失败会话，并返回可读错误信息
+
+支持的 URL 输入约束：
+
+- 当前仅做非空校验
+- 默认按公开可访问、无需登录的页面处理
+- 非法 URL、网络不可达、浏览器未安装等情况由 Playwright 异常统一返回错误提示
+
+页面加载失败场景说明：
+
+- 目标地址不可访问
+- URL 格式不被浏览器接受
+- Playwright 浏览器未安装
+- 页面在超时时间内未完成导航
+
+预览页截图或界面说明：
+
+- 预览结果显示在 `/admin` 同页结果卡片中
+- 截图文件默认保存到 `snapshots/page-preview/`
+- 页面内可直接显示截图，并可通过 `/admin/preview-sessions/{id}/screenshot` 打开原图
+
+验收记录：
+
+- `mvn test` 通过，新增 `AdminControllerWebMvcTest` 后总计 5 个测试通过
+- `mvn -q -DskipTests compile` 通过
+- 使用 `docker compose up -d postgres` 启动 PostgreSQL 后，默认 profile 启动应用成功
+- `http://localhost:8080/admin` 访问返回 `200`
+- 提交 `https://www.sina.com.cn` 后，页面成功展示页面标题、最终 URL 和耗时
+- 截图文件已生成到 `snapshots/page-preview/`
+- `http://localhost:8080/admin/preview-sessions/1/screenshot` 访问返回 `200`
+- 数据库查询确认 `page_preview_session` 已插入成功记录
+
+实际手工验证路径：
+
+1. 执行 `docker compose up -d postgres`
+2. 确认已安装 Playwright Chromium 浏览器
+3. 执行 `mvn spring-boot:run`
+4. 访问 `http://localhost:8080/admin`
+5. 输入 `https://www.sina.com.cn` 并提交
+6. 确认页面出现会话 ID、页面标题、最终 URL、加载耗时和截图
+7. 点击截图原图链接，确认 `/admin/preview-sessions/{id}/screenshot` 返回 `200`
+8. 在 PostgreSQL 中执行 `select id, requested_url, final_url, page_title, status from page_preview_session order by id desc limit 3;`，确认记录已落库
+
+偏差说明：
+
+- 当前 URL 输入仅做非空校验，尚未加入更严格的格式校验；M2 范围内通过 Playwright 导航异常兜底
 
 ### M3 可视化选区与字段规则创建
 
