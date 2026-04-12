@@ -22,6 +22,9 @@ import java.util.List;
 @Service
 public class RuleDraftService {
 
+    private static final int MAX_SELECTED_TEXT_LENGTH = 500;
+    private static final int MAX_DOM_PATH_LENGTH = 1000;
+
     private final PagePreviewSessionService pagePreviewSessionService;
     private final PlaywrightService playwrightService;
     private final SelectorCandidateGenerator selectorCandidateGenerator;
@@ -80,20 +83,23 @@ public class RuleDraftService {
         CrawlRule rule = resolveRule(fieldForm, previewSession);
         CrawlRuleVersion version = resolveDraftVersion(rule, previewSession.getId());
 
+        String selectedText = normalizeSelectedText(fieldForm.getSelectedText());
+        String domPath = normalizeDomPath(fieldForm.getDomPath());
+
         CrawlRuleField field = new CrawlRuleField();
         field.setRuleVersionId(version.getId());
         field.setFieldName(fieldForm.getFieldName().trim());
         field.setFieldType(fieldForm.getFieldType().trim());
         field.setSelectedTagName(fieldForm.getSelectedTagName().trim());
-        field.setSelectedText(fieldForm.getSelectedText().trim());
-        field.setDomPath(fieldForm.getDomPath().trim());
+        field.setSelectedText(selectedText);
+        field.setDomPath(domPath);
         crawlRuleFieldMapper.insert(field);
 
         SelectableElement selectedElement = new SelectableElement(
                 -1,
                 fieldForm.getSelectedTagName(),
-                fieldForm.getSelectedText(),
-                fieldForm.getDomPath(),
+                selectedText,
+                domPath,
                 fieldForm.getElementIdValue(),
                 fieldForm.getClassNames(),
                 fieldForm.getHrefValue(),
@@ -122,6 +128,10 @@ public class RuleDraftService {
             if (existing != null) {
                 return existing;
             }
+        }
+
+        if (fieldForm.getRuleName() == null || fieldForm.getRuleName().isBlank()) {
+            throw new IllegalArgumentException("首次创建规则时必须填写规则名称");
         }
 
         CrawlRule rule = new CrawlRule();
@@ -196,5 +206,27 @@ public class RuleDraftService {
                 element.widthPercent(),
                 element.heightPercent()
         );
+    }
+
+    private String normalizeSelectedText(String value) {
+        String normalized = value == null ? "" : value.replaceAll("\\s+", " ").trim();
+        if (normalized.isBlank()) {
+            throw new IllegalArgumentException("请先选择页面元素");
+        }
+        if (normalized.length() > MAX_SELECTED_TEXT_LENGTH) {
+            throw new IllegalArgumentException("选区过大，请选择更细粒度的元素");
+        }
+        return normalized;
+    }
+
+    private String normalizeDomPath(String value) {
+        String normalized = value == null ? "" : value.trim();
+        if (normalized.isBlank()) {
+            throw new IllegalArgumentException("请先选择页面元素");
+        }
+        if (normalized.length() > MAX_DOM_PATH_LENGTH) {
+            throw new IllegalArgumentException("元素路径过长，请选择更细粒度的元素");
+        }
+        return normalized;
     }
 }

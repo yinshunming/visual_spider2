@@ -108,4 +108,37 @@ class RuleDraftControllerWebMvcTest {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/admin/rules/drafts/new?previewSessionId=1&ruleId=9"));
     }
+
+    @Test
+    void shouldShowReadableErrorWhenSaveFails() throws Exception {
+        given(ruleDraftService.buildDraftPage(eq(1L), eq(9L))).willReturn(
+                new RuleDraftPageView(
+                        1L,
+                        "新浪首页",
+                        "https://www.sina.com.cn/",
+                        "/admin/preview-sessions/1/screenshot",
+                        9L,
+                        "demo-rule",
+                        12L,
+                        2,
+                        "DRAFT",
+                        List.of(),
+                        List.of()
+                )
+        );
+        given(ruleDraftService.saveDraftField(any(RuleDraftFieldForm.class)))
+                .willThrow(new IllegalArgumentException("选区过大，请选择更细粒度的元素"));
+
+        mockMvc.perform(post("/admin/rules/drafts/fields")
+                        .param("previewSessionId", "1")
+                        .param("ruleId", "9")
+                        .param("fieldName", "content")
+                        .param("fieldType", "TEXT")
+                        .param("selectedTagName", "div")
+                        .param("selectedText", "超大区域")
+                        .param("domPath", "body > div:nth-of-type(1)"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("admin/rule-draft"))
+                .andExpect(model().attribute("formError", "选区过大，请选择更细粒度的元素"));
+    }
 }

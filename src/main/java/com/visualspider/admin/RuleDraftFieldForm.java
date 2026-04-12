@@ -9,7 +9,6 @@ public class RuleDraftFieldForm {
     private Long previewSessionId;
     private Long ruleId;
 
-    @NotBlank(message = "规则名称不能为空")
     private String ruleName;
 
     @NotBlank(message = "字段名称不能为空")
@@ -137,4 +136,3 @@ public class RuleDraftFieldForm {
         this.dateTimeValue = dateTimeValue;
     }
 }
-

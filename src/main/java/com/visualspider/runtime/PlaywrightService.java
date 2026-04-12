@@ -96,6 +96,7 @@ public class PlaywrightService {
                             .map((element, index) => {
                               const rect = element.getBoundingClientRect();
                               const text = normalize(element.innerText || element.textContent);
+                              const childCount = element.children ? element.children.length : 0;
                               const top = rect.top + window.scrollY;
                               const left = rect.left + window.scrollX;
                               return {
@@ -112,14 +113,25 @@ public class PlaywrightService {
                                 leftPercent: left / docWidth * 100,
                                 widthPercent: rect.width / docWidth * 100,
                                 heightPercent: rect.height / docHeight * 100,
-                                area: rect.width * rect.height
+                                area: rect.width * rect.height,
+                                childCount
                               };
                             })
                             .filter(item => item.text.length >= 2)
                             .filter(item => item.widthPercent > 1 && item.heightPercent > 0.5)
                             .filter(item => ['h1','h2','h3','h4','p','span','a','time','div','article','section','li'].includes(item.tagName))
-                            .filter(item => item.tagName !== 'div' || item.text.length >= 8)
-                            .sort((a, b) => a.topPercent - b.topPercent || b.area - a.area)
+                            .filter(item => item.text.length <= 160)
+                            .filter(item => item.area <= 180000)
+                            .filter(item => item.tagName !== 'div' || (item.text.length >= 4 && item.text.length <= 48 && item.childCount <= 3))
+                            .filter(item => item.tagName !== 'section' && item.tagName !== 'article')
+                            .sort((a, b) => {
+                              const score = (item) => {
+                                const tagBias = ['a', 'span', 'time', 'h1', 'h2', 'h3', 'h4', 'p', 'li'].includes(item.tagName) ? 100000 : 0;
+                                const childPenalty = item.childCount * 5000;
+                                return tagBias - childPenalty - item.area;
+                              };
+                              return a.topPercent - b.topPercent || score(b) - score(a);
+                            })
                             .slice(0, 28);
                         }
                         """);

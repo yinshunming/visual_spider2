@@ -49,8 +49,15 @@ public class RuleDraftController {
             return "admin/rule-draft";
         }
 
-        Long ruleId = ruleDraftService.saveDraftField(fieldForm);
-        return "redirect:/admin/rules/drafts/new?previewSessionId="
-                + fieldForm.getPreviewSessionId() + "&ruleId=" + ruleId;
+        try {
+            Long ruleId = ruleDraftService.saveDraftField(fieldForm);
+            return "redirect:/admin/rules/drafts/new?previewSessionId="
+                    + fieldForm.getPreviewSessionId() + "&ruleId=" + ruleId;
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            model.addAttribute("formError", ex.getMessage());
+            model.addAttribute("pageView",
+                    ruleDraftService.buildDraftPage(fieldForm.getPreviewSessionId(), fieldForm.getRuleId()));
+            return "admin/rule-draft";
+        }
     }
 }
