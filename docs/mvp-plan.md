@@ -315,7 +315,7 @@ migration 列表：
 
 ### M3 可视化选区与字段规则创建
 
-状态：`planned`
+状态：`done`
 
 目标：
 
@@ -356,9 +356,68 @@ migration 列表：
 - selector 候选生成策略摘要
 - 字段配置结构说明
 
+本次实现结果：
+
+- 新增规则草稿相关表结构：`crawl_rule`、`crawl_rule_version`、`crawl_rule_field`、`crawl_selector_candidate`
+- 通过 `RuleDraftController` 和 `RuleDraftService` 打通“从预览会话进入规则草稿页 -> 选择元素 -> 创建字段 -> 保存 selector 候选”的最小闭环
+- 复用 M2 的截图能力，在规则草稿页展示页面截图，并叠加可点击选区按钮
+- 同时提供右侧候选元素列表，便于在截图覆盖层之外完成选择，降低交互复杂度
+- 每次创建字段时都会生成多种 selector 候选并落库，当前最小候选类型包括：`css`、`dom_path`、`text`、`css_class`、`attribute`
+- 已保存字段会在规则草稿页下方展示，并显示对应 selector 候选摘要
+
+实际采用的选区交互方案：
+
+- 不使用 iframe
+- 基于 M2 的页面截图做覆盖层点击
+- 后端使用 Playwright 重新分析页面元素，生成可选元素的文本、DOM 路径、属性和位置信息
+- 前端页面采用服务端渲染 + 少量原生 JavaScript，将点击结果写入隐藏表单后提交保存
+
+selector 候选生成策略摘要：
+
+- 优先生成 `css` 候选：当元素存在 id 时使用 `#id`
+- 生成 `dom_path` 候选：使用结构化 CSS 路径
+- 生成 `text` 候选：保存归一化后的文本锚点
+- 当类名存在时生成 `css_class` 候选
+- 当存在 `href`、`title`、`datetime` 等属性时生成 `attribute` 候选
+- 若前述候选不足 2 个，则补一个 `tag` 候选，保证每个字段至少有 2 个候选
+- 当前实现明确不生成 XPath 候选，符合“不要依赖单个 XPath”的约束
+
+字段配置结构说明：
+
+- 规则主对象：`crawl_rule`
+- 草稿版本：`crawl_rule_version`，当前 M3 仅保存 `DRAFT`
+- 字段对象：`crawl_rule_field`
+- selector 候选对象：`crawl_selector_candidate`
+
+验收记录：
+
+- `mvn test` 通过，当前总计 9 个自动化测试通过
+- `mvn -q -DskipTests compile` 通过
+- 新增 `RuleDraftControllerWebMvcTest`，覆盖规则草稿页加载和字段保存跳转
+- 新增 `SelectorCandidateGeneratorTest`，覆盖 selector 候选生成规则
+- 使用 PostgreSQL + 默认 profile 启动应用后，`/admin/rules/drafts/new` 可基于预览会话正常打开
+- 通过真实页面预览会话创建字段 `mobileClient` 成功，数据库中该字段已生成 4 个 selector 候选
+
+实际手工验证路径：
+
+1. 执行 `docker compose up -d postgres`
+2. 确认已安装 Playwright Chromium 浏览器
+3. 执行 `mvn spring-boot:run`
+4. 访问 `http://localhost:8080/admin`，输入 `https://www.sina.com.cn` 并生成预览
+5. 点击“进入可视化选区”进入规则草稿页
+6. 在截图覆盖层或右侧候选列表中选择一个元素
+7. 输入规则名称和字段名称，提交“保存到规则草稿”
+8. 页面返回后确认“已保存字段”区域出现新字段及 selector 候选摘要
+9. 在 PostgreSQL 中执行以下 SQL，确认字段至少生成 2 个候选：
+   `select r.id as rule_id, f.field_name, f.field_type, count(c.id) as selector_count from crawl_rule r join crawl_rule_version v on v.rule_id = r.id join crawl_rule_field f on f.rule_version_id = v.id left join crawl_selector_candidate c on c.field_id = f.id group by r.id, f.field_name, f.field_type order by r.id desc limit 5;`
+
+偏差说明：
+
+- M3 采用“截图覆盖层 + 候选元素列表联动”的保守交互方案，而不是完整的动态 DOM 镜像编辑器；这样可以在最小改动下满足点击元素创建字段的 MVP 目标
+
 ### M4 抽取预览与字段校验
 
-状态：`planned`
+状态：`done`
 
 目标：
 
@@ -391,6 +450,61 @@ migration 列表：
 - 抽取链路说明
 - 校验规则清单
 - 预览结果存储方式
+
+本次实现结果：
+
+- 新增 `rule_preview_run` 与 `rule_preview_field_result` 两张最小预览记录表，并补充 migration `V4__create_rule_preview_tables.sql`
+- 新增 `RulePreviewService`，可基于规则草稿字段和 selector 候选执行一次预览抽取
+- 新增 `FieldValidationService`，按 MVP 范围支持必填、长度、URL 格式、时间格式和去空白校验
+- 新增 `RulePreviewController` 和 [rule-preview.html](/D:/opencodeSpace/visual_spider2/src/main/resources/templates/admin/rule-preview.html)，用于展示字段抽取值、当前候选、校验状态和失败原因
+- 在规则草稿页增加“执行抽取预览”入口，形成 M3 -> M4 的直接流转
+- 支持通过查询参数切换某个字段的 selector 候选并重新预览
+
+抽取链路说明：
+
+- 从 `crawl_rule` 找到当前草稿版本 `crawl_rule_version`
+- 读取该版本下的 `crawl_rule_field` 与 `crawl_selector_candidate`
+- 按字段逐个执行候选抽取
+- 抽取结果进入 `FieldValidationService` 做基础校验
+- 结果同时写入 `rule_preview_run` 与 `rule_preview_field_result`
+
+校验规则清单：
+
+- 空值校验：字段值为空时直接失败
+- 长度校验：超过 2000 字符判为失败
+- URL 校验：仅接受 `http://` 或 `https://` 开头
+- DATETIME 校验：支持 `ISO_DATE_TIME` 和 `yyyy-MM-dd HH:mm:ss`
+- 去空白：抽取结果在校验前统一 `trim`
+
+预览结果存储方式：
+
+- `rule_preview_run` 保存一次预览执行主记录
+- `rule_preview_field_result` 保存每个字段的命中值、命中候选、状态和校验信息
+
+验收记录：
+
+- `mvn test` 通过，当前总计 13 个自动化测试通过
+- `mvn -q -DskipTests compile` 通过
+- 新增 `RulePreviewControllerWebMvcTest` 覆盖预览页访问
+- 新增 `FieldValidationServiceTest` 覆盖 URL 和 DATETIME 的基础校验逻辑
+- 手工验证中，`candidateField_4=16`（`attribute` 候选）时返回 `VALID / 校验通过`
+- 手工验证中，`candidateField_4=14`（`text` 候选）时返回 `INVALID / URL 格式不正确`
+- 数据库中 `rule_preview_field_result` 已成功记录 `VALID` 与 `INVALID` 两种结果
+
+实际手工验证路径：
+
+1. 执行 `docker compose up -d postgres`
+2. 确认已安装 Playwright Chromium 浏览器
+3. 执行 `mvn spring-boot:run`
+4. 在 `/admin` 中打开 `https://www.sina.com.cn` 预览
+5. 在 M3 规则草稿页创建一个 `URL` 类型字段，例如 `mobileClient`
+6. 访问 `/admin/rules/previews?previewSessionId=<id>&ruleId=<id>&candidateField_<fieldId>=<attributeCandidateId>`，确认页面出现“校验通过”，并展示有效 URL
+7. 再访问 `/admin/rules/previews?previewSessionId=<id>&ruleId=<id>&candidateField_<fieldId>=<textCandidateId>`，确认页面出现“URL 格式不正确”
+8. 在 PostgreSQL 中执行 `select field_id, status, validation_message from rule_preview_field_result order by id desc limit 4;`，确认已落库
+
+偏差说明：
+
+- 当前默认候选预览策略对 `URL` 字段仍偏保守，手工切换候选后的结果链路已可用；后续若需要可在 M4.5 或 M5 前再优化默认候选优先级
 
 ### M5 规则版本化与发布
 

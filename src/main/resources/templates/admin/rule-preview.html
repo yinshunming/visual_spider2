@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>抽取预览</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: "Segoe UI", "PingFang SC", sans-serif;
+            background: #f6f1e8;
+            color: #1f2937;
+        }
+
+        .shell {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 24px 20px 64px;
+        }
+
+        .card {
+            background: #fffdfa;
+            border: 1px solid #d8c9b8;
+            border-radius: 18px;
+            padding: 24px;
+            margin-bottom: 18px;
+            box-shadow: 0 12px 40px rgba(139, 94, 52, 0.08);
+        }
+
+        .good {
+            color: #166534;
+        }
+
+        .bad {
+            color: #b91c1c;
+        }
+
+        label {
+            display: block;
+            margin: 10px 0 6px;
+            font-weight: 600;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d8c9b8;
+            border-radius: 10px;
+            box-sizing: border-box;
+        }
+
+        button {
+            margin-top: 14px;
+            padding: 10px 16px;
+            border: 0;
+            border-radius: 10px;
+            background: #8b5e34;
+            color: #fff;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            word-break: break-word;
+            background: #f8f5ef;
+            border-radius: 12px;
+            padding: 12px;
+        }
+    </style>
+</head>
+<body>
+<main class="shell">
+    <section class="card">
+        <h1>抽取预览</h1>
+        <p th:text="${previewPage.ruleName() + ' · ' + previewPage.previewUrl()}"></p>
+        <p>
+            <a th:href="@{/admin/rules/drafts/new(previewSessionId=${previewPage.previewSessionId()},ruleId=${previewPage.ruleId()})}">返回规则草稿</a>
+        </p>
+    </section>
+
+    <form method="get" th:action="@{/admin/rules/previews}">
+        <input type="hidden" name="previewSessionId" th:value="${previewPage.previewSessionId()}">
+        <input type="hidden" name="ruleId" th:value="${previewPage.ruleId()}">
+
+        <section class="card" th:each="field : ${previewPage.fieldResults()}">
+            <h2 th:text="${field.fieldName() + ' (' + field.fieldType() + ')'}"></h2>
+            <p th:class="${field.valid()} ? 'good' : 'bad'">
+                <span th:text="${field.valid()} ? '校验通过' : '校验失败'"></span>
+                <span th:text="${' · ' + field.validationMessage()}"></span>
+            </p>
+            <p><strong>当前候选：</strong><span th:text="${field.usedSelectorSummary()}"></span></p>
+            <p><strong>抽取值：</strong></p>
+            <pre th:text="${field.extractedValue()} ?: '-'"></pre>
+
+            <label th:for="${'candidateField_' + field.fieldId()}">切换 selector 候选后重新预览</label>
+            <select th:id="${'candidateField_' + field.fieldId()}" th:name="${'candidateField_' + field.fieldId()}">
+                <option th:each="candidate : ${field.candidates()}"
+                        th:value="${candidate.candidateId()}"
+                        th:selected="${candidate.selected()}"
+                        th:text="${candidate.selectorType() + ': ' + candidate.selectorValue()}"></option>
+            </select>
+        </section>
+
+        <button type="submit">重新执行预览</button>
+    </form>
+</main>
+</body>
+</html>

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>规则草稿创建</title>
+    <style>
+        :root {
+            --bg: #f6f1e8;
+            --card: #fffdfa;
+            --ink: #1f2937;
+            --accent: #8b5e34;
+            --line: #d8c9b8;
+            --bad: #b91c1c;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", "PingFang SC", sans-serif;
+            background: radial-gradient(circle at top, #fff8ef, var(--bg));
+            color: var(--ink);
+        }
+
+        .shell {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px 20px 64px;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            box-shadow: 0 12px 40px rgba(139, 94, 52, 0.08);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .layout {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
+        }
+
+        .preview-frame {
+            position: relative;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        .preview-frame img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .overlay-button {
+            position: absolute;
+            border: 2px solid rgba(139, 94, 52, 0.6);
+            background: rgba(139, 94, 52, 0.15);
+            color: #5d3b1b;
+            font-size: 12px;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .overlay-button.active {
+            border-color: #b45309;
+            background: rgba(251, 191, 36, 0.28);
+        }
+
+        .candidate-list {
+            margin-top: 16px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .candidate-item {
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 10px 12px;
+            cursor: pointer;
+            background: #fff;
+        }
+
+        .candidate-item.active {
+            border-color: var(--accent);
+            background: #fdf1e2;
+        }
+
+        label {
+            display: block;
+            margin: 10px 0 6px;
+            font-weight: 600;
+        }
+
+        input, select {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px 12px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+        }
+
+        button[type="submit"] {
+            margin-top: 14px;
+            width: 100%;
+            padding: 11px 14px;
+            border: 0;
+            border-radius: 10px;
+            background: var(--accent);
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .error {
+            margin-top: 12px;
+            color: var(--bad);
+        }
+
+        ul {
+            padding-left: 18px;
+        }
+    </style>
+</head>
+<body>
+<main class="shell">
+    <section class="card">
+        <h1>规则草稿创建</h1>
+        <p th:text="${'预览会话 #' + pageView.previewSessionId() + ' · ' + pageView.previewTitle()}"></p>
+        <p><a href="/admin">返回预览首页</a></p>
+        <p th:if="${pageView.ruleId() != null}">
+            <a th:href="@{/admin/rules/previews(previewSessionId=${pageView.previewSessionId()},ruleId=${pageView.ruleId()})}">执行抽取预览</a>
+        </p>
+    </section>
+
+    <section class="layout">
+        <article class="card">
+            <h2>可视化选区</h2>
+            <div class="preview-frame" id="preview-frame">
+                <img th:src="${pageView.screenshotUrl()}" alt="预览截图">
+                <button
+                        th:each="element : ${pageView.selectableElements()}"
+                        type="button"
+                        class="overlay-button"
+                        th:style="${'top:' + element.topPercent() + '%;left:' + element.leftPercent() + '%;width:' + element.widthPercent() + '%;height:' + element.heightPercent() + '%;'}"
+                        th:attr="data-index=${element.elementIndex()},data-tag=${element.tagName()},data-text=${element.text()},data-dom-path=${element.domPath()},data-element-id-value=${element.elementIdValue()},data-class-names=${element.classNames()},data-href-value=${element.hrefValue()},data-title-value=${element.titleValue()},data-date-time-value=${element.dateTimeValue()}">
+                    <span th:text="${element.elementIndex()}"></span>
+                </button>
+            </div>
+
+            <div class="candidate-list" id="candidate-list">
+                <div
+                        th:each="element : ${pageView.selectableElements()}"
+                        class="candidate-item"
+                        th:attr="data-index=${element.elementIndex()},data-tag=${element.tagName()},data-text=${element.text()},data-dom-path=${element.domPath()},data-element-id-value=${element.elementIdValue()},data-class-names=${element.classNames()},data-href-value=${element.hrefValue()},data-title-value=${element.titleValue()},data-date-time-value=${element.dateTimeValue()}">
+                    <strong th:text="${'#' + element.elementIndex() + ' [' + element.tagName() + ']'}"></strong>
+                    <div th:text="${element.text()}"></div>
+                    <small th:text="${element.domPath()}"></small>
+                </div>
+            </div>
+        </article>
+
+        <article class="card">
+            <h2>创建字段</h2>
+            <form method="post" th:action="@{/admin/rules/drafts/fields}" th:object="${fieldForm}">
+                <input type="hidden" th:field="*{previewSessionId}">
+                <input type="hidden" th:field="*{ruleId}">
+                <input type="hidden" th:field="*{selectedTagName}">
+                <input type="hidden" th:field="*{selectedText}">
+                <input type="hidden" th:field="*{domPath}">
+                <input type="hidden" th:field="*{elementIdValue}">
+                <input type="hidden" th:field="*{classNames}">
+                <input type="hidden" th:field="*{hrefValue}">
+                <input type="hidden" th:field="*{titleValue}">
+                <input type="hidden" th:field="*{dateTimeValue}">
+
+                <label for="ruleName">规则名称</label>
+                <input id="ruleName" type="text" th:field="*{ruleName}" th:value="${pageView.ruleName() != null ? pageView.ruleName() : fieldForm.ruleName}">
+
+                <label for="fieldName">字段名称</label>
+                <input id="fieldName" type="text" th:field="*{fieldName}" placeholder="例如：title">
+
+                <label for="fieldType">字段类型</label>
+                <select id="fieldType" th:field="*{fieldType}">
+                    <option value="TEXT">TEXT</option>
+                    <option value="HTML">HTML</option>
+                    <option value="DATETIME">DATETIME</option>
+                    <option value="URL">URL</option>
+                </select>
+
+                <div class="card" style="margin-top: 14px; padding: 14px;">
+                    <strong>当前选中元素</strong>
+                    <div id="selected-summary">尚未选择</div>
+                </div>
+
+                <div class="error" th:if="${formError}" th:text="${formError}"></div>
+                <button type="submit">保存到规则草稿</button>
+            </form>
+        </article>
+    </section>
+
+    <section class="card">
+        <h2>已保存字段</h2>
+        <div th:if="${#lists.isEmpty(pageView.fields())}">当前还没有字段，请先从截图或右侧列表中选择元素并保存。</div>
+        <div th:each="field : ${pageView.fields()}">
+            <h3 th:text="${field.fieldName() + ' (' + field.fieldType() + ')'}"></h3>
+            <p th:text="${field.selectedText()}"></p>
+            <p><small th:text="${field.domPath()}"></small></p>
+            <ul>
+                <li th:each="candidate : ${field.selectorSummaries()}" th:text="${candidate}"></li>
+            </ul>
+        </div>
+    </section>
+</main>
+
+<script>
+    const fieldMap = {
+        tag: document.getElementById('selectedTagName'),
+        text: document.getElementById('selectedText'),
+        domPath: document.getElementById('domPath'),
+        elementIdValue: document.getElementById('elementIdValue'),
+        classNames: document.getElementById('classNames'),
+        hrefValue: document.getElementById('hrefValue'),
+        titleValue: document.getElementById('titleValue'),
+        dateTimeValue: document.getElementById('dateTimeValue')
+    };
+
+    const summary = document.getElementById('selected-summary');
+
+    function bindSelectable(node) {
+        node.addEventListener('click', () => {
+            document.querySelectorAll('.overlay-button').forEach(button => button.classList.remove('active'));
+            document.querySelectorAll('.candidate-item').forEach(item => item.classList.remove('active'));
+
+            const index = node.dataset.index;
+            document.querySelectorAll(`[data-index="${index}"]`).forEach(item => item.classList.add('active'));
+
+            fieldMap.tag.value = node.dataset.tag || '';
+            fieldMap.text.value = node.dataset.text || '';
+            fieldMap.domPath.value = node.dataset.domPath || '';
+            fieldMap.elementIdValue.value = node.dataset.elementIdValue || '';
+            fieldMap.classNames.value = node.dataset.classNames || '';
+            fieldMap.hrefValue.value = node.dataset.hrefValue || '';
+            fieldMap.titleValue.value = node.dataset.titleValue || '';
+            fieldMap.dateTimeValue.value = node.dataset.dateTimeValue || '';
+
+            summary.textContent = `[${node.dataset.tag}] ${node.dataset.text || ''} | ${node.dataset.domPath || ''}`;
+        });
+    }
+
+    document.querySelectorAll('.overlay-button, .candidate-item').forEach(bindSelectable);
+</script>
+</body>
+</html>

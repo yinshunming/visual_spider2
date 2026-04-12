@@ -176,12 +176,16 @@
                 <dt>页面标题</dt>
                 <dd th:text="${previewSession.pageTitle()} ?: '-'"></dd>
                 <dt>耗时</dt>
-                <dd th:text="${previewSession.loadDurationMs()} != null ? ${previewSession.loadDurationMs()} + ' ms' : '-'"></dd>
+                <dd th:text="${previewSession.loadDurationMs() != null ? previewSession.loadDurationMs() + ' ms' : '-'}"></dd>
                 <dt>状态</dt>
                 <dd th:text="${previewSession.status()}"></dd>
                 <dt th:if="${previewSession.screenshotUrl()}">截图</dt>
                 <dd th:if="${previewSession.screenshotUrl()}">
                     <a th:href="${previewSession.screenshotUrl()}" target="_blank">打开原图</a>
+                </dd>
+                <dt th:if="${previewSession.status() == 'SUCCESS'}">规则创建</dt>
+                <dd th:if="${previewSession.status() == 'SUCCESS'}">
+                    <a th:href="@{/admin/rules/drafts/new(previewSessionId=${previewSession.id()})}">进入可视化选区</a>
                 </dd>
             </dl>
             <img th:if="${previewSession.screenshotUrl()}" th:src="${previewSession.screenshotUrl()}" alt="页面预览截图">
