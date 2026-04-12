@@ -508,7 +508,7 @@ selector 候选生成策略摘要：
 
 ### M5 规则版本化与发布
 
-状态：`planned`
+状态：`done`
 
 目标：
 
@@ -543,6 +543,68 @@ selector 候选生成策略摘要：
 - 版本模型说明
 - 发布状态流转说明
 - 与抓取任务的绑定关系说明
+
+本次实现结果：
+
+- 在 `crawl_rule_version` 上补充 `published_at` 字段，并新增 migration `V5__extend_rule_version_publish.sql`
+- 新增 `RuleVersionService`，负责版本发布、历史版本查询、从历史版本创建新草稿和重新发布
+- 新增 `RuleVersionController` 与 [rule-versions.html](/D:/opencodeSpace/visual_spider2/src/main/resources/templates/admin/rule-versions.html)，提供历史版本页与发布入口
+- 在规则草稿页增加“查看版本历史”入口，形成 M3/M4 -> M5 的直接流转
+- 发布逻辑已保证同一规则任意时刻只有一个 `PUBLISHED` 版本
+- 创建新草稿版本时会复制字段和 selector 候选，避免破坏历史版本
+
+版本模型说明：
+
+- `crawl_rule`：规则主对象
+- `crawl_rule_version`：规则版本对象
+- `DRAFT`：当前可编辑草稿版本
+- `PUBLISHED`：当前已发布版本
+- `ARCHIVED`：被新发布版本替换后的历史版本状态
+
+发布状态流转说明：
+
+- 初始草稿：`DRAFT`
+- 发布草稿：`DRAFT -> PUBLISHED`
+- 发布新版本时，旧的 `PUBLISHED` 自动变为 `ARCHIVED`
+- 重新发布历史版本时，当前 `PUBLISHED` 变为 `ARCHIVED`，目标历史版本变为 `PUBLISHED`
+- 从任意历史版本可复制出一个新的 `DRAFT` 版本
+
+与抓取任务的绑定关系说明：
+
+- 当前 M5 只完成“一个规则只有一个已发布版本”的数据语义约束
+- 调度任务的实际绑定和执行限制会在 M7 正式接入
+- 但从数据模型上，后续任务只需要引用当前 `PUBLISHED` 的版本即可
+
+验收记录：
+
+- `mvn test` 通过，当前总计 17 个自动化测试通过
+- `mvn -q -DskipTests compile` 通过
+- 新增 `RuleVersionControllerWebMvcTest`，覆盖版本历史页和发布入口
+- 新增 `RuleVersionServiceTest`，覆盖发布和“只能发布候选充足版本”的约束
+- 手工验证中，规则 `m5-sina-rule` 的 v1 发布成功
+- 手工验证中，基于 v1 成功创建 v2 草稿
+- 手工验证中，先发布 v2，再重新发布 v1，数据库状态成功在 `PUBLISHED` 与 `ARCHIVED` 之间切换
+
+实际手工验证路径：
+
+1. 执行 `docker compose up -d postgres`
+2. 执行 `mvn spring-boot:run`
+3. 在 `/admin` 中生成一个预览会话
+4. 在规则草稿页创建至少一个字段，确保每个字段拥有不少于 2 个 selector 候选
+5. 访问 `/admin/rules/{ruleId}/versions` 查看版本历史页
+6. 对当前草稿版本执行发布，确认其状态变为 `PUBLISHED`
+7. 对该已发布版本执行“创建新草稿”，确认生成新的 `DRAFT` 版本
+8. 对新的草稿版本执行发布，确认旧 `PUBLISHED` 自动变为 `ARCHIVED`
+9. 再对旧版本执行重新发布，确认状态切换为：
+   - 旧版本：`PUBLISHED`
+   - 新版本：`ARCHIVED`
+10. 在 PostgreSQL 中执行：
+    `select version_no, status from crawl_rule_version where rule_id = <ruleId> order by version_no;`
+    确认同一时间只有一个 `PUBLISHED`
+
+偏差说明：
+
+- 当前“创建新草稿版本”采用完整复制字段与 selector 候选的保守方案，而不是做增量差异编辑；这样能在最小改动下满足版本化与回滚需求
 
 ### M6 映射到 `article` 表
 

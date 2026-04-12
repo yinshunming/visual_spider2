@@ -131,8 +131,12 @@
         <h1>规则草稿创建</h1>
         <p th:text="${'预览会话 #' + pageView.previewSessionId() + ' · ' + pageView.previewTitle()}"></p>
         <p><a href="/admin">返回预览首页</a></p>
+        <p th:if="${pageView.ruleId() != null}"
+           th:text="${'规则 #' + pageView.ruleId() + ' · 当前草稿 v' + pageView.versionNo() + ' (' + pageView.versionStatus() + ')'}"></p>
         <p th:if="${pageView.ruleId() != null}">
             <a th:href="@{/admin/rules/previews(previewSessionId=${pageView.previewSessionId()},ruleId=${pageView.ruleId()})}">执行抽取预览</a>
+            <span> | </span>
+            <a th:href="@{/admin/rules/{ruleId}/versions(ruleId=${pageView.ruleId()})}">查看版本历史</a>
         </p>
     </section>
 

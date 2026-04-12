@@ -8,7 +8,7 @@ import com.visualspider.persistence.DatabaseProbeMapper;
 import com.visualspider.persistence.PagePreviewSessionMapper;
 import com.visualspider.persistence.RulePreviewFieldResultMapper;
 import com.visualspider.persistence.RulePreviewRunMapper;
-import com.visualspider.runtime.RuleDraftService;
+import com.visualspider.runtime.RuleVersionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -17,8 +17,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -27,14 +27,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
-@WebMvcTest(RuleDraftController.class)
-class RuleDraftControllerWebMvcTest {
+@WebMvcTest(RuleVersionController.class)
+class RuleVersionControllerWebMvcTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @MockBean
-    private RuleDraftService ruleDraftService;
+    private RuleVersionService ruleVersionService;
 
     @MockBean
     private DatabaseProbeMapper databaseProbeMapper;
@@ -61,43 +61,34 @@ class RuleDraftControllerWebMvcTest {
     private RulePreviewFieldResultMapper rulePreviewFieldResultMapper;
 
     @Test
-    void shouldRenderDraftPage() throws Exception {
-        given(ruleDraftService.buildDraftPage(eq(1L), eq(null))).willReturn(
-                new RuleDraftPageView(
+    void shouldRenderVersionPage() throws Exception {
+        given(ruleVersionService.buildVersionPage(eq(9L))).willReturn(
+                new RuleVersionPageView(
+                        9L,
+                        "sina-home-rule",
                         1L,
-                        "新浪首页",
-                        "https://www.sina.com.cn/",
-                        "/admin/preview-sessions/1/screenshot",
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        List.of(),
-                        List.of()
+                        12L,
+                        2,
+                        "DRAFT",
+                        List.of(
+                                new RuleVersionSummaryView(10L, 2, "DRAFT", "2026-04-12 10:00:00", "-"),
+                                new RuleVersionSummaryView(8L, 1, "PUBLISHED", "2026-04-12 09:00:00", "2026-04-12 09:20:00")
+                        )
                 )
         );
 
-        mockMvc.perform(get("/admin/rules/drafts/new").param("previewSessionId", "1"))
+        mockMvc.perform(get("/admin/rules/9/versions"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("admin/rule-draft"))
-                .andExpect(model().attributeExists("pageView"))
-                .andExpect(model().attributeExists("fieldForm"));
+                .andExpect(view().name("admin/rule-versions"))
+                .andExpect(model().attributeExists("versionPage"));
     }
 
     @Test
-    void shouldRedirectAfterSavingField() throws Exception {
-        given(ruleDraftService.saveDraftField(any(RuleDraftFieldForm.class))).willReturn(9L);
+    void shouldRedirectAfterPublish() throws Exception {
+        willDoNothing().given(ruleVersionService).publishVersion(9L, 8L);
 
-        mockMvc.perform(post("/admin/rules/drafts/fields")
-                        .param("previewSessionId", "1")
-                        .param("ruleName", "sina-home")
-                        .param("fieldName", "title")
-                        .param("fieldType", "TEXT")
-                        .param("selectedTagName", "h1")
-                        .param("selectedText", "新浪首页")
-                        .param("domPath", "body > h1:nth-of-type(1)"))
+        mockMvc.perform(post("/admin/rules/9/versions/8/publish"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/admin/rules/drafts/new?previewSessionId=1&ruleId=9"));
+                .andExpect(redirectedUrl("/admin/rules/9/versions"));
     }
 }

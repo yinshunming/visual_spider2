@@ -9,8 +9,10 @@ public record RuleDraftPageView(
         String screenshotUrl,
         Long ruleId,
         String ruleName,
+        Long versionId,
+        Integer versionNo,
+        String versionStatus,
         List<SelectableElementView> selectableElements,
         List<RuleFieldSummaryView> fields
 ) {
 }
-

@@ -65,6 +65,9 @@ public class RuleDraftService {
                 "/admin/preview-sessions/" + previewSessionId + "/screenshot",
                 rule == null ? null : rule.getId(),
                 rule == null ? null : rule.getRuleName(),
+                draftVersion == null ? null : draftVersion.getId(),
+                draftVersion == null ? null : draftVersion.getVersionNo(),
+                draftVersion == null ? null : draftVersion.getStatus(),
                 selectableElements,
                 fields
         );
@@ -195,4 +198,3 @@ public class RuleDraftService {
         );
     }
 }
-

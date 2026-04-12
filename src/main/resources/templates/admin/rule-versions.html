@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>规则版本历史</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: "Segoe UI", "PingFang SC", sans-serif;
+            background: #f6f1e8;
+            color: #1f2937;
+        }
+
+        .shell {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 24px 20px 64px;
+        }
+
+        .card {
+            background: #fffdfa;
+            border: 1px solid #d8c9b8;
+            border-radius: 18px;
+            padding: 24px;
+            margin-bottom: 18px;
+            box-shadow: 0 12px 40px rgba(139, 94, 52, 0.08);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 10px 8px;
+            border-bottom: 1px solid #eadfce;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 8px 12px;
+            border: 0;
+            border-radius: 10px;
+            background: #8b5e34;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .muted {
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+<main class="shell">
+    <section class="card">
+        <h1>规则版本历史</h1>
+        <p th:text="${versionPage.ruleName()} + ' · 规则 #' + ${versionPage.ruleId()}"></p>
+        <p th:if="${versionPage.previewSessionId() != null}">
+            <a th:href="@{/admin/rules/drafts/new(previewSessionId=${versionPage.previewSessionId()},ruleId=${versionPage.ruleId()})}">返回规则草稿页</a>
+        </p>
+        <p class="muted" th:if="${versionPage.draftVersionId() != null}"
+           th:text="${'当前草稿版本：v' + versionPage.draftVersionNo() + ' (' + versionPage.draftStatus() + ')'}"></p>
+    </section>
+
+    <section class="card">
+        <table>
+            <thead>
+            <tr>
+                <th>版本</th>
+                <th>状态</th>
+                <th>创建时间</th>
+                <th>发布时间</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="version : ${versionPage.versions()}">
+                <td th:text="${'v' + version.versionNo()}"></td>
+                <td th:text="${version.status()}"></td>
+                <td th:text="${version.createdAtText()}"></td>
+                <td th:text="${version.publishedAtText()}"></td>
+                <td>
+                    <div class="actions">
+                        <form method="post" th:action="@{/admin/rules/{ruleId}/versions/{versionId}/publish(ruleId=${versionPage.ruleId()},versionId=${version.versionId()})}">
+                            <button type="submit">发布</button>
+                        </form>
+                        <form method="post" th:action="@{/admin/rules/{ruleId}/versions/{versionId}/fork-draft(ruleId=${versionPage.ruleId()},versionId=${version.versionId()})}">
+                            <button type="submit">创建新草稿</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+</main>
+</body>
+</html>

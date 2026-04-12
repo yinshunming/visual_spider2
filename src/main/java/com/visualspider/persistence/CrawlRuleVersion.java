@@ -10,6 +10,7 @@ public class CrawlRuleVersion {
     private String status;
     private Long sourcePreviewSessionId;
     private LocalDateTime createdAt;
+    private LocalDateTime publishedAt;
 
     public Long getId() {
         return id;
@@ -58,5 +59,12 @@ public class CrawlRuleVersion {
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
-}
 
+    public LocalDateTime getPublishedAt() {
+        return publishedAt;
+    }
+
+    public void setPublishedAt(LocalDateTime publishedAt) {
+        this.publishedAt = publishedAt;
+    }
+}
