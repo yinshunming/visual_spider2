@@ -81,7 +81,11 @@ class RuleDraftControllerWebMvcTest {
                         null,
                         null,
                         null,
-                        List.of(),
+                        List.of(
+                                new SelectableElementView(1, "a", "新闻一", "body > a:nth-of-type(1)", "", "", "", "", "", 10, 10, 10, 2),
+                                new SelectableElementView(2, "a", "新闻二", "body > a:nth-of-type(2)", "", "", "", "", "", 20, 10, 10, 2),
+                                new SelectableElementView(3, "a", "新闻三", "body > a:nth-of-type(3)", "", "", "", "", "", 30, 10, 10, 2)
+                        ),
                         List.of()
                 )
         );
@@ -90,7 +94,8 @@ class RuleDraftControllerWebMvcTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("admin/rule-draft"))
                 .andExpect(model().attributeExists("pageView"))
-                .andExpect(model().attributeExists("fieldForm"));
+                .andExpect(model().attributeExists("fieldForm"))
+                .andExpect(model().attributeExists("pageView"));
     }
 
     @Test

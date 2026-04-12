@@ -23,6 +23,8 @@ import java.util.UUID;
 @Service
 public class PlaywrightService {
 
+    private static final int DEFAULT_ELEMENT_LIMIT = 80;
+
     private final PlaywrightProperties properties;
     private final SnapshotProperties snapshotProperties;
 
@@ -118,21 +120,31 @@ public class PlaywrightService {
                               };
                             })
                             .filter(item => item.text.length >= 2)
-                            .filter(item => item.widthPercent > 1 && item.heightPercent > 0.5)
+                            .filter(item => item.widthPercent > 0.6 && item.heightPercent > 0.18)
                             .filter(item => ['h1','h2','h3','h4','p','span','a','time','div','article','section','li'].includes(item.tagName))
-                            .filter(item => item.text.length <= 160)
-                            .filter(item => item.area <= 180000)
-                            .filter(item => item.tagName !== 'div' || (item.text.length >= 4 && item.text.length <= 48 && item.childCount <= 3))
+                            .filter(item => item.text.length <= 260)
+                            .filter(item => item.area <= 260000)
                             .filter(item => item.tagName !== 'section' && item.tagName !== 'article')
+                            .filter(item => item.tagName !== 'div' || (item.text.length >= 2 && item.text.length <= 90 && item.childCount <= 5))
                             .sort((a, b) => {
                               const score = (item) => {
-                                const tagBias = ['a', 'span', 'time', 'h1', 'h2', 'h3', 'h4', 'p', 'li'].includes(item.tagName) ? 100000 : 0;
-                                const childPenalty = item.childCount * 5000;
-                                return tagBias - childPenalty - item.area;
+                                const topBonus = Math.max(0, 120 - item.topPercent) * 100;
+                                const lowerAreaBonus = item.topPercent > 35 ? 12000 : 0;
+                                const tagBias =
+                                  item.tagName === 'a' ? 120000 :
+                                  item.tagName === 'li' ? 95000 :
+                                  item.tagName === 'span' ? 90000 :
+                                  item.tagName === 'time' ? 90000 :
+                                  ['h1', 'h2', 'h3', 'h4'].includes(item.tagName) ? 85000 :
+                                  item.tagName === 'p' ? 70000 :
+                                  item.tagName === 'div' ? 12000 : 0;
+                                const childPenalty = item.childCount * 3500;
+                                const areaPenalty = item.area * 0.12;
+                                return tagBias + topBonus + lowerAreaBonus - childPenalty - areaPenalty;
                               };
                               return a.topPercent - b.topPercent || score(b) - score(a);
                             })
-                            .slice(0, 28);
+                            .slice(0, 80);
                         }
                         """);
 
@@ -155,7 +167,10 @@ public class PlaywrightService {
                             asDouble(item.get("heightPercent"))
                     ));
                 }
-                return result.stream().sorted(Comparator.comparingDouble(SelectableElement::topPercent)).toList();
+                return result.stream()
+                        .sorted(Comparator.comparingDouble(SelectableElement::topPercent))
+                        .limit(DEFAULT_ELEMENT_LIMIT)
+                        .toList();
             }
         } catch (Exception ex) {
             throw new IllegalStateException("页面元素分析失败: " + ex.getMessage(), ex);

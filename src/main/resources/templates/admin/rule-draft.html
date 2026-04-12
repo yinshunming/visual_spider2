@@ -76,6 +76,10 @@
             gap: 10px;
         }
 
+        .candidate-list.collapsed .candidate-item:nth-child(n+31) {
+            display: none;
+        }
+
         .candidate-item {
             border: 1px solid var(--line);
             border-radius: 12px;
@@ -87,6 +91,14 @@
         .candidate-item.active {
             border-color: var(--accent);
             background: #fdf1e2;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-top: 16px;
         }
 
         label {
@@ -155,7 +167,12 @@
                 </button>
             </div>
 
-            <div class="candidate-list" id="candidate-list">
+            <div class="toolbar">
+                <strong>候选元素列表</strong>
+                <button type="button" id="toggle-candidates" style="width:auto;padding:8px 12px;">显示更多候选</button>
+            </div>
+
+            <div class="candidate-list collapsed" id="candidate-list">
                 <div
                         th:each="element : ${pageView.selectableElements()}"
                         class="candidate-item"
@@ -233,6 +250,8 @@
     };
 
     const summary = document.getElementById('selected-summary');
+    const candidateList = document.getElementById('candidate-list');
+    const toggleCandidates = document.getElementById('toggle-candidates');
 
     function bindSelectable(node) {
         node.addEventListener('click', () => {
@@ -256,6 +275,13 @@
     }
 
     document.querySelectorAll('.overlay-button, .candidate-item').forEach(bindSelectable);
+
+    if (toggleCandidates) {
+        toggleCandidates.addEventListener('click', () => {
+            candidateList.classList.toggle('collapsed');
+            toggleCandidates.textContent = candidateList.classList.contains('collapsed') ? '显示更多候选' : '收起候选';
+        });
+    }
 </script>
 </body>
 </html>
