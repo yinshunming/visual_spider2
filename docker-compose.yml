@@ -1,0 +1,13 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: visual-spider2-postgres
+    environment:
+      POSTGRES_DB: visual_spider2
+      POSTGRES_USER: visual_spider2
+      POSTGRES_PASSWORD: visual_spider2
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+

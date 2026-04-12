@@ -119,7 +119,7 @@ MVP 仅覆盖以下校验能力：
 
 ### M1 基础骨架与可运行环境
 
-状态：`planned`
+状态：`done`
 
 目标：
 
@@ -157,6 +157,71 @@ MVP 仅覆盖以下校验能力：
 - 已引入依赖与版本
 - migration 列表
 - 编译与启动结果
+
+本次实现结果：
+
+- 新建 Maven 单体工程骨架，基于 Spring Boot `3.4.5`，编译目标锁定为 Java 21
+- 接入 Thymeleaf 服务端页面，提供后台首页 `/admin`
+- 接入 MyBatis，并增加 `DatabaseProbeMapper` 作为最小数据库连通探针
+- 接入 Flyway，并新增 migration `V1__bootstrap_marker.sql`
+- 接入 Quartz 内存调度，并在应用启动后注册一次示例 Job
+- 接入 Playwright for Java，提供页面标题探测服务和后台演示表单
+- 补充 `docker-compose.yml`，提供本地 PostgreSQL 17 启动方式
+- 补充 `application.yml`、`application-test.yml`、`.gitignore` 和基础测试类
+
+实际落地的项目结构：
+
+- `src/main/java/com/visualspider/VisualSpiderApplication.java`
+- `src/main/java/com/visualspider/admin/*`
+- `src/main/java/com/visualspider/health/*`
+- `src/main/java/com/visualspider/persistence/*`
+- `src/main/java/com/visualspider/runtime/*`
+- `src/main/java/com/visualspider/scheduler/*`
+- `src/main/resources/templates/admin/index.html`
+- `src/main/resources/db/migration/V1__bootstrap_marker.sql`
+
+已引入依赖与版本：
+
+- Spring Boot `3.4.5`
+- MyBatis Spring Boot Starter `3.0.4`
+- Playwright `1.53.0`
+- Jsoup `1.18.3`
+- Flyway `10.20.1`
+- PostgreSQL JDBC `42.7.5`
+
+migration 列表：
+
+- `V1__bootstrap_marker.sql`
+
+验收记录：
+
+- `mvn test` 通过，Spring Boot 测试上下文、Flyway migration、Quartz 初始化均成功
+- `mvn -q -DskipTests compile` 通过
+- 使用 `docker compose up -d postgres` 启动 PostgreSQL 17 容器成功
+- 使用默认 profile 启动应用后，`/healthz` 返回 `200`，数据库状态为 `UP`
+- 访问 `/admin` 返回 `200`
+- 通过 `/admin/playwright-demo` 探测 `https://example.com` 成功，页面标题命中 `Example Domain`
+- 应用日志确认 Quartz 示例任务执行成功：`Bootstrap Quartz job executed successfully.`
+
+实际手工验证路径：
+
+1. 执行 `docker compose up -d postgres`
+2. 执行 `mvn org.codehaus.mojo:exec-maven-plugin:3.5.0:java -Dexec.mainClass=com.microsoft.playwright.CLI -Dexec.args="install chromium"` 安装 Playwright 浏览器
+3. 执行 `mvn spring-boot:run`
+4. 访问 `http://localhost:8080/healthz`，确认返回 `status=UP`
+5. 访问 `http://localhost:8080/admin`
+6. 在后台页输入 `https://example.com`，确认能返回页面标题 `Example Domain`
+7. 查看启动日志，确认出现 `Bootstrap Quartz job executed successfully.`
+
+编译与启动结果：
+
+- 编译结果：通过
+- 测试结果：通过
+- 默认 profile + PostgreSQL 容器启动结果：通过
+
+偏差说明：
+
+- 本机实际安装的是 JDK 24，但 Maven 使用 `--release 21` 编译，产物仍按 Java 21 目标生成
 
 ### M2 URL 输入与页面加载预览
 

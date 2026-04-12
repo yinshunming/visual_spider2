@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Visual Spider Admin</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --bg: #f6f1e8;
+            --card: #fffdfa;
+            --ink: #1f2937;
+            --accent: #8b5e34;
+            --line: #d8c9b8;
+            --ok: #166534;
+            --warn: #b45309;
+            --bad: #b91c1c;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", "PingFang SC", sans-serif;
+            background: radial-gradient(circle at top, #fff8ef, var(--bg));
+            color: var(--ink);
+        }
+
+        .shell {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 32px 20px 64px;
+        }
+
+        .hero, .card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            box-shadow: 0 12px 40px rgba(139, 94, 52, 0.08);
+        }
+
+        .hero {
+            padding: 28px;
+            margin-bottom: 20px;
+        }
+
+        .hero h1 {
+            margin: 0 0 10px;
+            font-size: 30px;
+        }
+
+        .hero p {
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .grid {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+
+        .card {
+            padding: 24px;
+        }
+
+        .status {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .ok {
+            color: var(--ok);
+            background: #e8f8ee;
+        }
+
+        .bad {
+            color: var(--bad);
+            background: #fdecec;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        button {
+            margin-top: 12px;
+            padding: 10px 14px;
+            border: 0;
+            border-radius: 10px;
+            background: var(--accent);
+            color: #fff;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .hint, .error {
+            margin-top: 12px;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .error {
+            color: var(--bad);
+        }
+
+        dl {
+            margin: 0;
+        }
+
+        dt {
+            margin-top: 12px;
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        dd {
+            margin: 4px 0 0;
+            font-weight: 600;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+<main class="shell">
+    <section class="hero">
+        <h1>Visual Spider MVP Console</h1>
+        <p>M1 已搭起单体应用基础骨架。这里提供后台首页、数据库健康探针，以及一个最小的 Playwright 页面标题探测入口。</p>
+        <a href="/healthz">查看健康检查</a>
+        <div th:classappend="${databaseOk} ? 'status ok' : 'status bad'" class="status">
+            <span th:text="${databaseOk} ? '数据库连通' : '数据库未连通'"></span>
+        </div>
+    </section>
+
+    <section class="grid">
+        <article class="card">
+            <h2>Playwright 演示</h2>
+            <form method="post" th:action="@{/admin/playwright-demo}" th:object="${probeForm}">
+                <label for="url">页面 URL</label>
+                <input id="url" type="text" th:field="*{url}" placeholder="https://example.com">
+                <button type="submit">打开页面并读取标题</button>
+            </form>
+            <div class="error" th:if="${validationError}" th:text="${validationError}"></div>
+            <div class="error" th:if="${probeError}" th:text="${probeError}"></div>
+            <p class="hint">首次运行前如果尚未安装浏览器，可执行：<code>mvn org.codehaus.mojo:exec-maven-plugin:3.5.0:java -Dexec.mainClass=com.microsoft.playwright.CLI -Dexec.args="install chromium"</code></p>
+        </article>
+
+        <article class="card" th:if="${probeResult}">
+            <h2>探测结果</h2>
+            <dl>
+                <dt>请求 URL</dt>
+                <dd th:text="${probeResult.requestedUrl()}"></dd>
+                <dt>最终 URL</dt>
+                <dd th:text="${probeResult.finalUrl()}"></dd>
+                <dt>页面标题</dt>
+                <dd th:text="${probeResult.title()}"></dd>
+                <dt>耗时</dt>
+                <dd th:text="${probeResult.durationMs()} + ' ms'"></dd>
+            </dl>
+        </article>
+    </section>
+</main>
+</body>
+</html>
