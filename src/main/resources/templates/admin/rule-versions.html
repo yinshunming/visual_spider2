@@ -65,12 +65,14 @@
         <p th:if="${versionPage.previewSessionId() != null}">
             <a th:href="@{/admin/rules/drafts/new(previewSessionId=${versionPage.previewSessionId()},ruleId=${versionPage.ruleId()})}">返回规则草稿页</a>
         </p>
+        <p><a href="/admin/rules">返回规则列表</a></p>
         <p class="muted" th:if="${versionPage.draftVersionId() != null}"
            th:text="${'当前草稿版本：v' + versionPage.draftVersionNo() + ' (' + versionPage.draftStatus() + ')'}"></p>
         <p><a th:href="@{/admin/rules/{ruleId}/article-mappings(ruleId=${versionPage.ruleId()})}">配置 article 映射</a></p>
     </section>
 
     <section class="card">
+        <div th:if="${#lists.isEmpty(versionPage.versions())}">当前还没有版本记录，请先在规则草稿页保存字段。</div>
         <table>
             <thead>
             <tr>

@@ -4,6 +4,7 @@
 <body>
 <main>
     <h1 th:text="${'运行 #' + runDetail.runId()}"></h1>
+    <p><a href="/admin/tasks">返回任务列表</a></p>
     <p th:text="${'状态：' + runDetail.status()}"></p>
     <p th:text="${'来源 URL：' + runDetail.sourceUrl()}"></p>
     <p th:text="${'耗时：' + runDetail.durationMs()}"></p>
@@ -14,6 +15,7 @@
     <ul>
         <li th:each="snapshot : ${runDetail.snapshots()}" th:text="${snapshot.snapshotType()} + ' -> ' + ${snapshot.filePath()}"></li>
     </ul>
+    <div th:if="${#lists.isEmpty(runDetail.snapshots())}">当前没有快照索引，可能本次任务执行尚未写入快照。</div>
 </main>
 </body>
 </html>

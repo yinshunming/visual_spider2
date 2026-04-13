@@ -4,6 +4,7 @@
 <body>
 <main>
     <h1>创建抓取任务</h1>
+    <p><a href="/admin/tasks">返回任务列表</a></p>
     <form method="post" th:action="@{/admin/tasks}" th:object="${taskForm}">
         <label>任务名称<input th:field="*{taskName}" type="text"></label><br>
         <label>URL 模板<input th:field="*{urlTemplate}" type="text" placeholder="https://www.sina.com.cn"></label><br>
@@ -13,6 +14,7 @@
                 <option th:each="option : ${publishedVersions}" th:value="${option.versionId()}" th:text="${option.ruleName()} + ' v' + ${option.versionNo()}"></option>
             </select>
         </label><br>
+        <div th:if="${#lists.isEmpty(publishedVersions)}">当前没有可用的已发布版本，请先发布规则版本。</div>
         <label>Cron 表达式<input th:field="*{cronExpression}" type="text" placeholder="0 0/1 * * * ?"></label><br>
         <label>状态
             <select th:field="*{status}">
@@ -25,4 +27,3 @@
 </main>
 </body>
 </html>
-

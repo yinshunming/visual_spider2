@@ -839,7 +839,7 @@ Quartz 配置与限制：
 
 ### M8 MVP 收口与可用性补强
 
-状态：`planned`
+状态：`done`
 
 目标：
 
@@ -873,6 +873,62 @@ Quartz 配置与限制：
 - 演示脚本
 - 已知限制
 - 下一阶段建议
+
+本次实现结果：
+
+- 新增规则列表页 [rule-list.html](/D:/opencodeSpace/visual_spider2/src/main/resources/templates/admin/rule-list.html) 和 `RuleListController`，把规则编辑、版本历史入口集中到一个页面
+- 首页 [index.html](/D:/opencodeSpace/visual_spider2/src/main/resources/templates/admin/index.html) 增加了规则列表、任务列表快捷入口和演示路径提示
+- 规则版本页、article 映射页、任务列表页、任务创建页、运行记录页、运行详情页均补充了返回入口和空状态文案
+- 新增演示脚本文档 [docs/demo-script.md](/D:/opencodeSpace/visual_spider2/docs/demo-script.md)，覆盖从 URL 输入到查看运行详情的完整演示步骤
+- 对现有后台页面做收口级可用性补强，重点提升“知道下一步去哪”和“没有数据时也有清晰提示”
+
+演示脚本：
+
+- 已新增 [docs/demo-script.md](/D:/opencodeSpace/visual_spider2/docs/demo-script.md)
+- 当前推荐演示链路：
+  - URL 输入
+  - 生成预览
+  - 可视化选区
+  - 抽取预览
+  - 发布版本
+  - article 映射
+  - 创建任务
+  - 查看运行记录与快照
+
+已知限制：
+
+- Quartz 仍为内存型存储，应用重启后任务需要重新注册
+- 选区仍然是 MVP 级“截图覆盖层 + 候选列表”方案，不是完整实时 DOM 编辑器
+- article 去重当前仅按 `source_url`
+- 任务页和规则页仍是最小后台页，未做分页、检索和批量操作
+
+下一阶段建议：
+
+- 如果继续推进，可从以下两条线任选其一：
+  1. 增强可用性：继续优化选区体验、默认候选质量、错误提示和演示稳定性
+  2. 增强能力：在现有任务调度基础上补更完整的运行日志详情、快照下载和任务编辑
+
+验收记录：
+
+- `mvn test` 通过，当前总计 28 个自动化测试通过
+- `mvn -q -DskipTests compile` 通过
+- 新增 `RuleListControllerWebMvcTest`，覆盖规则列表页入口
+- 首页、规则页、任务页、运行详情页的关键入口和空状态已补齐
+- 演示脚本文档已落地，可作为当前 MVP 的标准演示路径
+
+实际手工验证路径：
+
+1. 按 [docs/demo-script.md](/D:/opencodeSpace/visual_spider2/docs/demo-script.md) 执行
+2. 访问 `http://localhost:8080/admin`
+3. 确认首页能直接进入：
+   - 规则列表
+   - 任务列表
+4. 在任务为空时访问 `/admin/tasks`，确认能看到空状态提示
+5. 在任务运行详情页无快照时，确认能看到提示而不是空白区域
+
+偏差说明：
+
+- M8 以收口为目标，主要做导航、空状态、演示脚本和页面可达性补强，没有重构已有页面结构
 
 ## 8. 建议的数据库对象最小集合
 

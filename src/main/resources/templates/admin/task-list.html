@@ -4,8 +4,9 @@
 <body>
 <main>
     <h1>抓取任务</h1>
-    <p><a href="/admin/tasks/new">创建任务</a></p>
-    <table>
+    <p><a href="/admin">返回首页</a> | <a href="/admin/tasks/new">创建任务</a></p>
+    <div th:if="${#lists.isEmpty(tasks)}">当前还没有任务。请先完成规则发布和 article 映射，再创建定时任务。</div>
+    <table th:if="${!#lists.isEmpty(tasks)}">
         <thead><tr><th>ID</th><th>名称</th><th>URL</th><th>版本</th><th>Cron</th><th>状态</th><th>操作</th></tr></thead>
         <tbody>
         <tr th:each="task : ${tasks}">
@@ -26,4 +27,3 @@
 </main>
 </body>
 </html>
-

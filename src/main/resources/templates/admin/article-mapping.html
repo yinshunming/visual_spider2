@@ -62,10 +62,12 @@
         <h1>Article 映射</h1>
         <p th:text="${mappingPage.ruleName()} + ' · 已发布版本 v' + ${mappingPage.publishedVersionNo()}"></p>
         <p><a th:href="@{/admin/rules/{ruleId}/versions(ruleId=${mappingPage.ruleId()})}">返回版本历史</a></p>
+        <p><a href="/admin/rules">返回规则列表</a></p>
         <p th:if="${mappingPage.lastRunMessage()}" th:text="${mappingPage.lastRunMessage()}"></p>
     </section>
 
     <section class="card">
+        <div th:if="${#lists.isEmpty(mappingPage.fieldOptions())}">当前已发布版本没有可映射字段，请先回到规则草稿补充字段并重新发布。</div>
         <form method="post" th:action="@{/admin/rules/{ruleId}/article-mappings(ruleId=${mappingPage.ruleId()})}" th:object="${mappingForm}">
             <table>
                 <thead>

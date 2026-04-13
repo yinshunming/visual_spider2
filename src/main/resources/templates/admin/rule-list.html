@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>规则列表</title></head>
+<body>
+<main>
+    <h1>规则列表</h1>
+    <p><a href="/admin">返回首页</a></p>
+    <div th:if="${#lists.isEmpty(rules)}">当前还没有规则。先从首页创建一个预览会话，再进入可视化选区创建规则。</div>
+    <table th:if="${!#lists.isEmpty(rules)}">
+        <thead><tr><th>ID</th><th>名称</th><th>草稿版本</th><th>操作</th></tr></thead>
+        <tbody>
+        <tr th:each="rule : ${rules}">
+            <td th:text="${rule.ruleId()}"></td>
+            <td th:text="${rule.ruleName()}"></td>
+            <td th:text="${rule.draftVersionNo() != null ? 'v' + rule.draftVersionNo() + ' (' + rule.draftStatus() + ')' : '-'}"></td>
+            <td>
+                <a th:if="${rule.previewSessionId() != null}" th:href="@{/admin/rules/drafts/new(previewSessionId=${rule.previewSessionId()},ruleId=${rule.ruleId()})}">编辑草稿</a>
+                <span th:if="${rule.previewSessionId() == null}">无预览上下文</span>
+                <span> | </span>
+                <a th:href="@{/admin/rules/{ruleId}/versions(ruleId=${rule.ruleId()})}">版本历史</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+</body>
+</html>
