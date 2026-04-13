@@ -719,7 +719,7 @@ selector 候选生成策略摘要：
 
 ### M7 Quartz 定时抓取、运行日志与页面快照
 
-状态：`planned`
+状态：`done`
 
 目标：
 
@@ -753,6 +753,89 @@ selector 候选生成策略摘要：
 - 任务模型说明
 - Quartz 配置与限制
 - 快照目录结构和清理策略
+
+本次实现结果：
+
+- 新增 `crawl_task`、`crawl_run_log`、`crawl_snapshot` 三张表，并补充 migration `V7__create_task_run_and_snapshot.sql`
+- 新增 `CrawlTaskService`，负责创建任务、启用/暂停任务、同步 Quartz 注册
+- 新增 `CrawlTaskJob`，复用已发布版本与 article 入库链路执行定时抓取
+- 新增 `TaskSnapshotService`，为每次运行保存 HTML、PNG、抽取 JSON 的快照索引
+- 新增任务与运行记录相关后台页面：
+  - [task-list.html](/D:/opencodeSpace/visual_spider2/src/main/resources/templates/admin/task-list.html)
+  - [task-form.html](/D:/opencodeSpace/visual_spider2/src/main/resources/templates/admin/task-form.html)
+  - [task-runs.html](/D:/opencodeSpace/visual_spider2/src/main/resources/templates/admin/task-runs.html)
+  - [task-run-detail.html](/D:/opencodeSpace/visual_spider2/src/main/resources/templates/admin/task-run-detail.html)
+- 在运行链路中真实写入了：
+  - HTML 快照
+  - PNG 截图
+  - 抽取结果 JSON
+
+任务模型说明：
+
+- `crawl_task`
+  - `task_name`
+  - `url_template`
+  - `rule_version_id`
+  - `cron_expression`
+  - `status`
+- 当前任务仅允许绑定“已发布版本”
+- 当前状态值使用：
+  - `ACTIVE`
+  - `PAUSED`
+
+Quartz 配置与限制：
+
+- 当前使用内存型 Quartz Job Store
+- 支持标准 Quartz Cron 表达式
+- 启用任务后立即注册到 Quartz
+- 暂不支持分布式调度、任务依赖、分片执行
+
+快照目录结构和清理策略：
+
+- 快照落盘目录：
+  - `snapshots/task-runs/<taskId>/<runId>/`
+- 当前保存类型：
+  - `page-html`
+  - `page-png`
+  - `extract-result`
+- 当前未实现自动清理策略，后续可在 M8 或运维阶段补充
+
+验收记录：
+
+- `mvn test` 通过，当前总计 27 个自动化测试通过
+- `mvn -q -DskipTests compile` 通过
+- 新增 `CrawlTaskControllerWebMvcTest`，覆盖任务创建页和任务保存
+- 新增 `CrawlTaskServiceTest`，覆盖任务保存与 Quartz 注册的核心路径
+- 手工验证中，任务 `m7-demo-task` 创建成功并处于 `ACTIVE`
+- Quartz 已实际触发该任务至少 2 次，`crawl_run_log` 中可见 `SUCCESS` 记录
+- `crawl_snapshot` 中可见 `page-html`、`page-png`、`extract-result` 三类快照索引
+- `article` 表中已有入库/更新结果，说明任务执行链路已贯通到 M6
+
+实际手工验证路径：
+
+1. 执行 `docker compose up -d postgres`
+2. 执行 `mvn spring-boot:run`
+3. 创建并发布一个规则版本，完成 article 映射
+4. 访问 `/admin/tasks/new`
+5. 创建一个 Cron 任务，例如 `0/15 * * * * ?`
+6. 确认任务在 `/admin/tasks` 中状态为 `ACTIVE`
+7. 等待一次以上 Quartz 触发
+8. 访问 `/admin/tasks/{taskId}/runs` 查看运行记录
+9. 打开 `/admin/tasks/runs/{runId}` 查看详情，确认存在：
+   - 状态/耗时
+   - HTML 快照路径
+   - PNG 快照路径
+   - 抽取 JSON 路径
+10. 在 PostgreSQL 中执行：
+    - `select id, task_name, cron_expression, status from crawl_task order by id desc limit 3;`
+    - `select id, task_id, status, source_url, duration_ms from crawl_run_log order by id desc limit 5;`
+    - `select snapshot_type, file_path from crawl_snapshot order by id desc limit 10;`
+    - `select id, source_url, title from article order by id desc limit 5;`
+
+偏差说明：
+
+- 当前 Quartz 使用内存型存储，应用重启后任务需要重新注册；这对 MVP 阶段是可接受的
+- 当前 `page-html` 与 `page-png` 快照已落盘，但还没有做快照清理和下载包装能力
 
 ### M8 MVP 收口与可用性补强
 

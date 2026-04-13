@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>运行记录</title></head>
+<body>
+<main>
+    <h1 th:text="${task.taskName()} + ' 的运行记录'"></h1>
+    <p><a href="/admin/tasks">返回任务列表</a></p>
+    <table>
+        <thead><tr><th>ID</th><th>状态</th><th>来源 URL</th><th>耗时</th><th>错误</th><th>详情</th></tr></thead>
+        <tbody>
+        <tr th:each="run : ${runs}">
+            <td th:text="${run.id}"></td>
+            <td th:text="${run.status}"></td>
+            <td th:text="${run.sourceUrl}"></td>
+            <td th:text="${run.durationMs}"></td>
+            <td th:text="${run.errorMessage}"></td>
+            <td><a th:href="@{/admin/tasks/runs/{id}(id=${run.id})}">查看</a></td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+</body>
+</html>
+

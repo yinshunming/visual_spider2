@@ -50,13 +50,21 @@ public class ArticleIngestionService {
     @Transactional
     public String ingest(Long ruleId) {
         CrawlRuleVersion published = articleMappingService.requirePublishedVersion(ruleId);
+        return ingestByPublishedVersion(published.getId(), resolveSourceUrl(published));
+    }
+
+    @Transactional
+    public String ingestByPublishedVersion(Long ruleVersionId, String sourcePageUrl) {
+        CrawlRuleVersion published = findPublishedVersion(ruleVersionId);
         List<RuleArticleMapping> mappings = ruleArticleMappingMapper.findByRuleVersionId(published.getId());
         if (mappings.isEmpty()) {
             throw new IllegalStateException("尚未配置 article 字段映射");
         }
 
-        PagePreviewSession previewSession = pagePreviewSessionService.getSession(published.getSourcePreviewSessionId());
-        String sourcePageUrl = previewSession.getFinalUrl() != null ? previewSession.getFinalUrl() : previewSession.getRequestedUrl();
+        if (sourcePageUrl == null || sourcePageUrl.isBlank()) {
+            PagePreviewSession previewSession = pagePreviewSessionService.getSession(published.getSourcePreviewSessionId());
+            sourcePageUrl = previewSession.getFinalUrl() != null ? previewSession.getFinalUrl() : previewSession.getRequestedUrl();
+        }
 
         Map<String, String> values = new HashMap<>();
         for (RuleArticleMapping mapping : mappings) {
@@ -93,6 +101,20 @@ public class ArticleIngestionService {
         }
         articleMapper.update(article);
         return "已更新 article，ID=" + article.getId() + "，source_url=" + article.getSourceUrl();
+    }
+
+    private String resolveSourceUrl(CrawlRuleVersion published) {
+        List<RuleArticleMapping> mappings = ruleArticleMappingMapper.findByRuleVersionId(published.getId());
+        PagePreviewSession previewSession = pagePreviewSessionService.getSession(published.getSourcePreviewSessionId());
+        return previewSession.getFinalUrl() != null ? previewSession.getFinalUrl() : previewSession.getRequestedUrl();
+    }
+
+    private CrawlRuleVersion findPublishedVersion(Long ruleVersionId) {
+        CrawlRuleVersion published = articleMappingService.requirePublishedVersionByVersionId(ruleVersionId);
+        if (published == null) {
+            throw new IllegalStateException("任务绑定的规则版本不是已发布版本");
+        }
+        return published;
     }
 
     private CrawlRuleField findField(Long versionId, Long fieldId) {
@@ -132,4 +154,3 @@ public class ArticleIngestionService {
         return null;
     }
 }
-

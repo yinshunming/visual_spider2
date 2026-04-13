@@ -3,7 +3,10 @@ package com.visualspider.admin;
 import com.visualspider.persistence.CrawlRuleFieldMapper;
 import com.visualspider.persistence.CrawlRuleMapper;
 import com.visualspider.persistence.CrawlRuleVersionMapper;
+import com.visualspider.persistence.CrawlRunLogMapper;
 import com.visualspider.persistence.CrawlSelectorCandidateMapper;
+import com.visualspider.persistence.CrawlSnapshotMapper;
+import com.visualspider.persistence.CrawlTaskMapper;
 import com.visualspider.persistence.DatabaseProbeMapper;
 import com.visualspider.persistence.PagePreviewSessionMapper;
 import com.visualspider.persistence.ArticleMapper;
@@ -65,6 +68,15 @@ class RulePreviewControllerWebMvcTest {
 
     @MockBean
     private RuleArticleMappingMapper ruleArticleMappingMapper;
+
+    @MockBean
+    private CrawlTaskMapper crawlTaskMapper;
+
+    @MockBean
+    private CrawlRunLogMapper crawlRunLogMapper;
+
+    @MockBean
+    private CrawlSnapshotMapper crawlSnapshotMapper;
 
     @Test
     void shouldRenderPreviewPage() throws Exception {

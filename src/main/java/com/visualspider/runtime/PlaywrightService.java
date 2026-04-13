@@ -58,6 +58,21 @@ public class PlaywrightService {
         }
     }
 
+    public PageRuntimeSnapshot captureRuntimeSnapshot(String url) {
+        try (Playwright playwright = Playwright.create()) {
+            BrowserType browserType = resolveBrowser(playwright);
+            Browser browser = browserType.launch(new BrowserType.LaunchOptions().setHeadless(properties.isHeadless()));
+            try (browser) {
+                Page page = browser.newPage();
+                page.navigate(url, new Page.NavigateOptions().setTimeout((double) properties.getTimeoutMs()));
+                String screenshotPath = saveScreenshot(page);
+                return new PageRuntimeSnapshot(page.content(), screenshotPath);
+            }
+        } catch (Exception ex) {
+            throw new IllegalStateException("运行时快照采集失败: " + ex.getMessage(), ex);
+        }
+    }
+
     @SuppressWarnings("unchecked")
     public List<SelectableElement> inspectSelectableElements(String url) {
         try (Playwright playwright = Playwright.create()) {

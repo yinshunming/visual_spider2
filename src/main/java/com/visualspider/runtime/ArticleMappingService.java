@@ -118,5 +118,12 @@ public class ArticleMappingService {
         }
         return version;
     }
-}
 
+    public CrawlRuleVersion requirePublishedVersionByVersionId(Long ruleVersionId) {
+        CrawlRuleVersion version = crawlRuleVersionMapper.findById(ruleVersionId);
+        if (version == null || !"PUBLISHED".equalsIgnoreCase(version.getStatus())) {
+            throw new IllegalStateException("任务绑定的规则版本不是已发布版本");
+        }
+        return version;
+    }
+}

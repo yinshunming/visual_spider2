@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>运行详情</title></head>
+<body>
+<main>
+    <h1 th:text="${'运行 #' + runDetail.runId()}"></h1>
+    <p th:text="${'状态：' + runDetail.status()}"></p>
+    <p th:text="${'来源 URL：' + runDetail.sourceUrl()}"></p>
+    <p th:text="${'耗时：' + runDetail.durationMs()}"></p>
+    <p th:text="${'开始时间：' + runDetail.startedAtText()}"></p>
+    <p th:text="${'结束时间：' + runDetail.finishedAtText()}"></p>
+    <p th:text="${'错误：' + runDetail.errorMessage()}"></p>
+    <h2>快照索引</h2>
+    <ul>
+        <li th:each="snapshot : ${runDetail.snapshots()}" th:text="${snapshot.snapshotType()} + ' -> ' + ${snapshot.filePath()}"></li>
+    </ul>
+</main>
+</body>
+</html>

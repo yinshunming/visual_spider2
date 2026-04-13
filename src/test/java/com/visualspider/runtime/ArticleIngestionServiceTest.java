@@ -45,6 +45,7 @@ class ArticleIngestionServiceTest {
         CrawlRuleVersion published = new CrawlRuleVersion();
         published.setId(1L);
         published.setSourcePreviewSessionId(10L);
+        published.setStatus("PUBLISHED");
 
         RuleArticleMapping mapping = new RuleArticleMapping();
         mapping.setRuleVersionId(1L);
@@ -67,6 +68,7 @@ class ArticleIngestionServiceTest {
         session.setFinalUrl("https://www.sina.com.cn/");
 
         given(articleMappingService.requirePublishedVersion(5L)).willReturn(published);
+        given(articleMappingService.requirePublishedVersionByVersionId(1L)).willReturn(published);
         given(ruleArticleMappingMapper.findByRuleVersionId(1L)).willReturn(List.of(mapping));
         given(crawlRuleFieldMapper.findByRuleVersionId(1L)).willReturn(List.of(field));
         given(crawlSelectorCandidateMapper.findByFieldId(2L)).willReturn(List.of(candidate));

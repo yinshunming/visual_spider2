@@ -89,6 +89,21 @@ public interface CrawlRuleVersionMapper {
     })
     CrawlRuleVersion findLatestPublishedByRuleId(Long ruleId);
 
+    @Select("""
+            select id, rule_id, version_no, status, source_preview_session_id, created_at, published_at
+            from crawl_rule_version
+            where status = 'PUBLISHED'
+            order by published_at desc, id desc
+            """)
+    @Results(id = "crawlRuleVersionPublishedListResult", value = {
+            @Result(property = "ruleId", column = "rule_id"),
+            @Result(property = "versionNo", column = "version_no"),
+            @Result(property = "sourcePreviewSessionId", column = "source_preview_session_id"),
+            @Result(property = "createdAt", column = "created_at"),
+            @Result(property = "publishedAt", column = "published_at")
+    })
+    List<CrawlRuleVersion> findAllPublished();
+
     @Update("""
             update crawl_rule_version
             set status = 'ARCHIVED',

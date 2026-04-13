@@ -2,6 +2,7 @@ package com.visualspider.runtime;
 
 import com.visualspider.admin.RuleVersionPageView;
 import com.visualspider.admin.RuleVersionSummaryView;
+import com.visualspider.admin.TaskOptionView;
 import com.visualspider.persistence.CrawlRule;
 import com.visualspider.persistence.CrawlRuleField;
 import com.visualspider.persistence.CrawlRuleFieldMapper;
@@ -59,6 +60,15 @@ public class RuleVersionService {
                 draft == null ? null : draft.getStatus(),
                 versions
         );
+    }
+
+    public List<TaskOptionView> findPublishedVersionOptions() {
+        return crawlRuleVersionMapper.findAllPublished().stream()
+                .map(version -> {
+                    CrawlRule rule = crawlRuleMapper.findById(version.getRuleId());
+                    return new TaskOptionView(version.getId(), rule == null ? ("rule-" + version.getRuleId()) : rule.getRuleName(), version.getVersionNo());
+                })
+                .toList();
     }
 
     @Transactional
