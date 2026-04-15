@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>批量详情抽取预览</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: "Segoe UI", "PingFang SC", sans-serif;
+            background: #f6f1e8;
+            color: #1f2937;
+        }
+
+        main {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 24px 20px 48px;
+        }
+
+        .card {
+            background: #fffdfa;
+            border: 1px solid #d8c9b8;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(139, 94, 52, 0.08);
+            margin-bottom: 18px;
+        }
+
+        .good {
+            color: #166534;
+        }
+
+        .bad {
+            color: #b91c1c;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            word-break: break-word;
+            background: #f8f5ef;
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eadfce;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: #f7f1e8;
+        }
+
+        a {
+            color: #8b5e34;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <section class="card">
+        <h1>批量详情抽取预览</h1>
+        <p th:text="${batchPreviewPage.listRuleName()} + ' -> ' + ${batchPreviewPage.detailRuleName()}"></p>
+        <p th:text="${batchPreviewPage.sourceUrl()}"></p>
+        <p>
+            <a th:href="@{/admin/rules/drafts/list-discovery(previewSessionId=${batchPreviewPage.previewSessionId()},ruleId=${batchPreviewPage.listRuleId()})}">返回列表发现预览</a>
+        </p>
+        <p class="bad" th:if="${batchPreviewError}" th:text="${batchPreviewError}"></p>
+    </section>
+
+    <section class="card" th:if="${#lists.isEmpty(batchPreviewPage.items())}">
+        <p>当前没有可执行的详情预览结果。</p>
+    </section>
+
+    <section class="card" th:each="item : ${batchPreviewPage.items()}">
+        <h2 th:text="${'#' + item.itemIndex() + ' ' + (item.titleText() != null and !item.titleText().isBlank() ? item.titleText() : '未命名列表项')}"></h2>
+        <p>
+            <a th:href="${item.detailUrl()}" th:text="${item.detailUrl()}" target="_blank" rel="noreferrer"></a>
+        </p>
+        <p th:if="${item.timeText() != null and !item.timeText().isBlank()}" th:text="${'列表时间：' + item.timeText()}"></p>
+        <p th:class="${item.success()} ? 'good' : 'bad'">
+            <span th:text="${item.success() ? '详情抽取成功' : '详情抽取失败'}"></span>
+            <span th:if="${item.errorMessage() != null and !item.errorMessage().isBlank()}" th:text="${' | ' + item.errorMessage()}"></span>
+        </p>
+
+        <table th:if="${item.success() and !#lists.isEmpty(item.fieldResults())}">
+            <thead>
+            <tr>
+                <th>字段</th>
+                <th>类型</th>
+                <th>状态</th>
+                <th>Selector</th>
+                <th>值</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="field : ${item.fieldResults()}">
+                <td th:text="${field.fieldName()}">title</td>
+                <td th:text="${field.fieldType()}">TEXT</td>
+                <td th:text="${field.valid()} ? 'VALID' : 'INVALID'"></td>
+                <td th:text="${field.usedSelectorSummary()}">css: h1</td>
+                <td><pre th:text="${field.extractedValue()} ?: '-'"></pre></td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+</main>
+</body>
+</html>

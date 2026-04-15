@@ -15,6 +15,7 @@ import com.visualspider.persistence.PagePreviewSessionMapper;
 import com.visualspider.persistence.RuleArticleMappingMapper;
 import com.visualspider.persistence.RulePreviewFieldResultMapper;
 import com.visualspider.persistence.RulePreviewRunMapper;
+import com.visualspider.runtime.BatchDetailPreviewService;
 import com.visualspider.runtime.ListDiscoveryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -39,6 +41,7 @@ class ListDiscoveryControllerWebMvcTest {
 
     @MockBean private com.visualspider.runtime.RuleDraftService ruleDraftService;
     @MockBean private ListDiscoveryService listDiscoveryService;
+    @MockBean private BatchDetailPreviewService batchDetailPreviewService;
     @MockBean private DatabaseProbeMapper databaseProbeMapper;
     @MockBean private PagePreviewSessionMapper pagePreviewSessionMapper;
     @MockBean private CrawlRuleMapper crawlRuleMapper;
@@ -89,5 +92,51 @@ class ListDiscoveryControllerWebMvcTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("admin/list-discovery"))
                 .andExpect(model().attribute("discoveryError", "List discovery requires one ITEM_URL field"));
+    }
+
+    @Test
+    void shouldRenderBatchDetailPreviewPage() throws Exception {
+        given(batchDetailPreviewService.preview(eq(1L), eq(9L), eq(12L))).willReturn(
+                new BatchDetailPreviewPageView(
+                        1L,
+                        9L,
+                        12L,
+                        "nba-list-rule",
+                        "nba-detail-rule",
+                        "https://sports.sina.com.cn/nba/",
+                        List.of(
+                                new BatchDetailPreviewItemView(
+                                        0,
+                                        "News 1",
+                                        "https://sports.sina.com.cn/nba/doc-1.shtml",
+                                        "2026-04-15",
+                                        true,
+                                        null,
+                                        List.of(
+                                                new PreviewFieldResultView(
+                                                        101L,
+                                                        "title",
+                                                        "TEXT",
+                                                        "First article",
+                                                        true,
+                                                        true,
+                                                        "ok",
+                                                        "css: h1",
+                                                        List.of()
+                                                )
+                                        )
+                                )
+                        )
+                )
+        );
+
+        mockMvc.perform(get("/admin/rules/drafts/detail-batch-preview")
+                        .param("previewSessionId", "1")
+                        .param("listRuleId", "9")
+                        .param("detailRuleId", "12"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("admin/detail-batch-preview"))
+                .andExpect(model().attributeExists("batchPreviewPage"))
+                .andExpect(model().attribute("batchPreviewError", nullValue()));
     }
 }

@@ -15,6 +15,7 @@ import com.visualspider.persistence.PagePreviewSessionMapper;
 import com.visualspider.persistence.RuleArticleMappingMapper;
 import com.visualspider.persistence.RulePreviewFieldResultMapper;
 import com.visualspider.persistence.RulePreviewRunMapper;
+import com.visualspider.runtime.BatchDetailPreviewService;
 import com.visualspider.runtime.ListDiscoveryService;
 import com.visualspider.runtime.RuleDraftService;
 import org.junit.jupiter.api.Test;
@@ -42,6 +43,7 @@ class RuleDraftControllerWebMvcTest {
     private MockMvc mockMvc;
 
     @MockBean private RuleDraftService ruleDraftService;
+    @MockBean private BatchDetailPreviewService batchDetailPreviewService;
     @MockBean private DatabaseProbeMapper databaseProbeMapper;
     @MockBean private PagePreviewSessionMapper pagePreviewSessionMapper;
     @MockBean private CrawlRuleMapper crawlRuleMapper;

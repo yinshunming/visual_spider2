@@ -1238,6 +1238,8 @@ Quartz 配置与限制：
 
 ### 13.3 里程碑 B：详情页批量抽取
 
+状态：`done`
+
 目标：
 
 - 将已存在的详情页抽取规则批量应用到列表页发现的详情链接
@@ -1261,6 +1263,35 @@ Quartz 配置与限制：
 2. 选择一条详情规则
 3. 执行批量详情抽取
 4. 查看多篇文章的抽取结果
+
+本次实现结果：
+
+- 新增 `BatchDetailPreviewService`，将列表发现结果中的 `detailUrl` 逐条衔接到现有详情页抽取规则
+- 在 `RulePreviewService` 中补充基于任意 `sourceUrl` 的详情页抽取执行入口，复用现有字段抽取与校验逻辑
+- 在 `RuleDraftController` 中新增 `/admin/rules/drafts/detail-batch-preview` 页面入口
+- 在 `list-discovery.html` 中新增“批量详情抽取预览”表单，允许输入详情规则 ID
+- 新增 `detail-batch-preview.html`，按列表项展示详情 URL、抽取状态、字段结果和失败原因
+- 本阶段没有改动 article 入库、Quartz 调度或 URL 去重逻辑，保持 13.3 只解决“列表发现 -> 批量详情抽取预览”闭环
+
+验收记录：
+
+- `mvn "-Dmaven.resources.skip=true" "-Dtest=ListDiscoveryControllerWebMvcTest,BatchDetailPreviewServiceTest" test` 通过
+- `mvn "-Dmaven.resources.skip=true" test` 通过
+- `mvn "-Dmaven.resources.skip=true" -q -DskipTests compile` 通过
+
+实际手工验证路径：
+
+1. 启动应用并访问 `http://localhost:8080/admin`
+2. 输入 `https://sports.sina.com.cn/nba/` 生成预览，并进入列表规则草稿页
+3. 配置并执行“列表发现预览”，确认结果页已经出现多条新闻详情链接
+4. 在“批量详情抽取预览”区域输入一个已存在的详情规则 ID
+5. 点击“执行批量详情抽取预览”
+6. 确认结果页按列表项展示多篇详情页的字段抽取结果；若某篇失败，页面内直接显示错误原因
+
+偏差说明：
+
+- 当前批量详情抽取预览使用“详情规则 ID”手工输入，而不是下拉选择；这样避免在 13.3 阶段扩展更多规则管理 UI
+- 当前批量预览结果不做持久化落库，只作为预览页展示；正式入库、URL 去重和任务统计仍留给 13.4 之后的阶段
 
 ### 13.4 里程碑 C：URL 规范化与去重增强
 

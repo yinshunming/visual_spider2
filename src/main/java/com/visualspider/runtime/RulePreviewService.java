@@ -2,6 +2,7 @@ package com.visualspider.runtime;
 
 import com.visualspider.admin.PreviewFieldCandidateView;
 import com.visualspider.admin.PreviewFieldResultView;
+import com.visualspider.admin.RulePreviewExecutionView;
 import com.visualspider.admin.RulePreviewPageView;
 import com.visualspider.persistence.CrawlRule;
 import com.visualspider.persistence.CrawlRuleField;
@@ -60,10 +61,10 @@ public class RulePreviewService {
     public RulePreviewPageView preview(Long previewSessionId,
                                        Long ruleId,
                                        Map<Long, Long> candidateOverrides) {
-        CrawlRule rule = requireRule(ruleId);
-        CrawlRuleVersion version = requireDraftVersion(ruleId);
         PagePreviewSession previewSession = requirePreviewSession(previewSessionId);
         String sourceUrl = previewSession.getFinalUrl() != null ? previewSession.getFinalUrl() : previewSession.getRequestedUrl();
+        RulePreviewExecutionView execution = previewBySourceUrl(ruleId, sourceUrl, candidateOverrides);
+        CrawlRuleVersion version = requireDraftVersion(ruleId);
 
         RulePreviewRun run = new RulePreviewRun();
         run.setRuleVersionId(version.getId());
@@ -71,20 +72,41 @@ public class RulePreviewService {
         run.setSourceUrl(sourceUrl);
         rulePreviewRunMapper.insert(run);
 
+        for (PreviewFieldResultView fieldResult : execution.fieldResults()) {
+            RulePreviewFieldResult persistResult = new RulePreviewFieldResult();
+            persistResult.setPreviewRunId(run.getId());
+            persistResult.setFieldId(fieldResult.fieldId());
+            persistResult.setSelectorCandidateId(resolveSelectedCandidateId(fieldResult));
+            persistResult.setExtractedValue(fieldResult.extractedValue());
+            persistResult.setStatus(fieldResult.valid() ? "VALID" : "INVALID");
+            persistResult.setValidationMessage(fieldResult.validationMessage());
+            rulePreviewFieldResultMapper.insert(persistResult);
+        }
+
+        return new RulePreviewPageView(
+                previewSessionId,
+                execution.ruleId(),
+                execution.ruleName(),
+                execution.sourceUrl(),
+                execution.fieldResults()
+        );
+    }
+
+    public RulePreviewExecutionView previewBySourceUrl(Long ruleId, String sourceUrl) {
+        return previewBySourceUrl(ruleId, sourceUrl, Map.of());
+    }
+
+    public RulePreviewExecutionView previewBySourceUrl(Long ruleId,
+                                                       String sourceUrl,
+                                                       Map<Long, Long> candidateOverrides) {
+        CrawlRule rule = requireRule(ruleId);
+        CrawlRuleVersion version = requireDraftVersion(ruleId);
+
         List<PreviewFieldResultView> results = new ArrayList<>();
         for (CrawlRuleField field : crawlRuleFieldMapper.findByRuleVersionId(version.getId())) {
             List<CrawlSelectorCandidate> candidates = crawlSelectorCandidateMapper.findByFieldId(field.getId());
             Long overrideId = candidateOverrides.get(field.getId());
             FieldPreviewExecution execution = executeFieldPreview(sourceUrl, field, candidates, overrideId);
-
-            RulePreviewFieldResult persistResult = new RulePreviewFieldResult();
-            persistResult.setPreviewRunId(run.getId());
-            persistResult.setFieldId(field.getId());
-            persistResult.setSelectorCandidateId(execution.selectedCandidate() == null ? null : execution.selectedCandidate().getId());
-            persistResult.setExtractedValue(execution.extractionResult().extractedValue());
-            persistResult.setStatus(execution.validationResult().valid() ? "VALID" : "INVALID");
-            persistResult.setValidationMessage(execution.validationResult().message());
-            rulePreviewFieldResultMapper.insert(persistResult);
 
             results.add(new PreviewFieldResultView(
                     field.getId(),
@@ -106,8 +128,7 @@ public class RulePreviewService {
             ));
         }
 
-        return new RulePreviewPageView(
-                previewSessionId,
+        return new RulePreviewExecutionView(
                 ruleId,
                 rule.getRuleName(),
                 sourceUrl,
@@ -229,5 +250,13 @@ public class RulePreviewService {
             PreviewExtractionResult extractionResult,
             FieldValidationResult validationResult
     ) {
+    }
+
+    private Long resolveSelectedCandidateId(PreviewFieldResultView fieldResult) {
+        return fieldResult.candidates().stream()
+                .filter(PreviewFieldCandidateView::selected)
+                .map(PreviewFieldCandidateView::candidateId)
+                .findFirst()
+                .orElse(null);
     }
 }

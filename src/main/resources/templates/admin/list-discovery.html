@@ -49,6 +49,27 @@
         a {
             color: #8b5e34;
         }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        input, button {
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid #d8c9b8;
+            box-sizing: border-box;
+        }
+
+        button {
+            margin-left: 8px;
+            background: #8b5e34;
+            color: #fff;
+            border: 0;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -60,6 +81,18 @@
             <a th:href="@{/admin/rules/drafts/new(previewSessionId=${discoveryPage.previewSessionId()},ruleId=${discoveryPage.ruleId()})}">返回规则草稿</a>
         </p>
         <p class="error" th:if="${discoveryError}" th:text="${discoveryError}"></p>
+    </section>
+
+    <section class="card" th:if="${!#lists.isEmpty(discoveryPage.items())}">
+        <h2>批量详情抽取预览</h2>
+        <p>输入已经存在的详情规则 ID，把当前列表页发现到的详情链接批量套用到该规则上。</p>
+        <form method="get" th:action="@{/admin/rules/drafts/detail-batch-preview}">
+            <input type="hidden" name="previewSessionId" th:value="${discoveryPage.previewSessionId()}">
+            <input type="hidden" name="listRuleId" th:value="${discoveryPage.ruleId()}">
+            <label for="detailRuleId">详情规则 ID</label>
+            <input id="detailRuleId" name="detailRuleId" type="number" min="1" required>
+            <button type="submit">执行批量详情抽取预览</button>
+        </form>
     </section>
 
     <section class="card" th:if="${#lists.isEmpty(discoveryPage.items())}">

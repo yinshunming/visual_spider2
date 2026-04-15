@@ -1,5 +1,6 @@
 package com.visualspider.admin;
 
+import com.visualspider.runtime.BatchDetailPreviewService;
 import com.visualspider.runtime.ListDiscoveryService;
 import com.visualspider.runtime.RuleDraftService;
 import jakarta.validation.Valid;
@@ -20,10 +21,14 @@ public class RuleDraftController {
 
     private final RuleDraftService ruleDraftService;
     private final ListDiscoveryService listDiscoveryService;
+    private final BatchDetailPreviewService batchDetailPreviewService;
 
-    public RuleDraftController(RuleDraftService ruleDraftService, ListDiscoveryService listDiscoveryService) {
+    public RuleDraftController(RuleDraftService ruleDraftService,
+                               ListDiscoveryService listDiscoveryService,
+                               BatchDetailPreviewService batchDetailPreviewService) {
         this.ruleDraftService = ruleDraftService;
         this.listDiscoveryService = listDiscoveryService;
+        this.batchDetailPreviewService = batchDetailPreviewService;
     }
 
     @GetMapping("/new")
@@ -84,5 +89,28 @@ public class RuleDraftController {
             model.addAttribute("discoveryError", ex.getMessage());
         }
         return "admin/list-discovery";
+    }
+
+    @GetMapping("/detail-batch-preview")
+    public String detailBatchPreview(@RequestParam Long previewSessionId,
+                                     @RequestParam Long listRuleId,
+                                     @RequestParam Long detailRuleId,
+                                     Model model) {
+        try {
+            model.addAttribute("batchPreviewPage", batchDetailPreviewService.preview(previewSessionId, listRuleId, detailRuleId));
+            model.addAttribute("batchPreviewError", null);
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            model.addAttribute("batchPreviewPage", new BatchDetailPreviewPageView(
+                    previewSessionId,
+                    listRuleId,
+                    detailRuleId,
+                    "detail-batch-preview",
+                    "detail-rule-" + detailRuleId,
+                    "",
+                    List.of()
+            ));
+            model.addAttribute("batchPreviewError", ex.getMessage());
+        }
+        return "admin/detail-batch-preview";
     }
 }
