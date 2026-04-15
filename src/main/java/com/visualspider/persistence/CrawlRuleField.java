@@ -8,6 +8,7 @@ public class CrawlRuleField {
     private Long ruleVersionId;
     private String fieldName;
     private String fieldType;
+    private String fieldRole;
     private String selectedTagName;
     private String selectedText;
     private String domPath;
@@ -45,6 +46,14 @@ public class CrawlRuleField {
         this.fieldType = fieldType;
     }
 
+    public String getFieldRole() {
+        return fieldRole;
+    }
+
+    public void setFieldRole(String fieldRole) {
+        this.fieldRole = fieldRole;
+    }
+
     public String getSelectedTagName() {
         return selectedTagName;
     }
@@ -77,4 +86,3 @@ public class CrawlRuleField {
         this.createdAt = createdAt;
     }
 }
-

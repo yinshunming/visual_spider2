@@ -10,9 +10,12 @@ import com.visualspider.persistence.CrawlSnapshotMapper;
 import com.visualspider.persistence.CrawlTaskMapper;
 import com.visualspider.persistence.PagePreviewSessionMapper;
 import com.visualspider.persistence.ArticleMapper;
+import com.visualspider.persistence.ListDiscoveryItemMapper;
+import com.visualspider.persistence.ListDiscoveryRunMapper;
 import com.visualspider.persistence.RuleArticleMappingMapper;
 import com.visualspider.persistence.RulePreviewFieldResultMapper;
 import com.visualspider.persistence.RulePreviewRunMapper;
+import com.visualspider.runtime.ListDiscoveryService;
 import com.visualspider.runtime.PagePreviewSessionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,6 +73,12 @@ class AdminControllerWebMvcTest {
     private RuleArticleMappingMapper ruleArticleMappingMapper;
 
     @MockBean
+    private ListDiscoveryRunMapper listDiscoveryRunMapper;
+
+    @MockBean
+    private ListDiscoveryItemMapper listDiscoveryItemMapper;
+
+    @MockBean
     private CrawlTaskMapper crawlTaskMapper;
 
     @MockBean
@@ -77,6 +86,9 @@ class AdminControllerWebMvcTest {
 
     @MockBean
     private CrawlSnapshotMapper crawlSnapshotMapper;
+
+    @MockBean
+    private ListDiscoveryService listDiscoveryService;
 
     @Test
     void shouldRenderAdminPage() throws Exception {

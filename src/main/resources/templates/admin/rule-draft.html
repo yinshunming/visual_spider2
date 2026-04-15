@@ -148,6 +148,8 @@
         <p th:if="${pageView.ruleId() != null}">
             <a th:href="@{/admin/rules/previews(previewSessionId=${pageView.previewSessionId()},ruleId=${pageView.ruleId()})}">执行抽取预览</a>
             <span> | </span>
+            <a th:href="@{/admin/rules/drafts/list-discovery(previewSessionId=${pageView.previewSessionId()},ruleId=${pageView.ruleId()})}">执行列表发现预览</a>
+            <span> | </span>
             <a th:href="@{/admin/rules/{ruleId}/versions(ruleId=${pageView.ruleId()})}">查看版本历史</a>
         </p>
     </section>
@@ -212,6 +214,14 @@
                     <option value="URL">URL</option>
                 </select>
 
+                <label for="fieldRole">字段角色</label>
+                <select id="fieldRole" th:field="*{fieldRole}">
+                    <option value="DETAIL">DETAIL</option>
+                    <option value="ITEM_TITLE">ITEM_TITLE</option>
+                    <option value="ITEM_URL">ITEM_URL</option>
+                    <option value="ITEM_TIME">ITEM_TIME</option>
+                </select>
+
                 <div class="card" style="margin-top: 14px; padding: 14px;">
                     <strong>当前选中元素</strong>
                     <div id="selected-summary">尚未选择</div>
@@ -227,7 +237,7 @@
         <h2>已保存字段</h2>
         <div th:if="${#lists.isEmpty(pageView.fields())}">当前还没有字段，请先从截图或右侧列表中选择元素并保存。</div>
         <div th:each="field : ${pageView.fields()}">
-            <h3 th:text="${field.fieldName() + ' (' + field.fieldType() + ')'}"></h3>
+            <h3 th:text="${field.fieldName() + ' (' + field.fieldType() + ' / ' + field.fieldRole() + ')'}"></h3>
             <p th:text="${field.selectedText()}"></p>
             <p><small th:text="${field.domPath()}"></small></p>
             <ul>

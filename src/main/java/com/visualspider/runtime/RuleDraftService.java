@@ -90,6 +90,7 @@ public class RuleDraftService {
         field.setRuleVersionId(version.getId());
         field.setFieldName(fieldForm.getFieldName().trim());
         field.setFieldType(fieldForm.getFieldType().trim());
+        field.setFieldRole(fieldForm.getFieldRole().trim());
         field.setSelectedTagName(fieldForm.getSelectedTagName().trim());
         field.setSelectedText(selectedText);
         field.setDomPath(domPath);
@@ -167,6 +168,7 @@ public class RuleDraftService {
                     field.getId(),
                     field.getFieldName(),
                     field.getFieldType(),
+                    field.getFieldRole(),
                     field.getSelectedText(),
                     field.getDomPath(),
                     selectorSummaries

@@ -218,6 +218,27 @@ public class PlaywrightService {
         }
     }
 
+    public List<String> extractValues(String url,
+                                      String fieldType,
+                                      CrawlSelectorCandidate candidate) {
+        try (Playwright playwright = Playwright.create()) {
+            BrowserType browserType = resolveBrowser(playwright);
+            Browser browser = browserType.launch(new BrowserType.LaunchOptions().setHeadless(properties.isHeadless()));
+            try (browser) {
+                Page page = browser.newPage();
+                page.navigate(url, new Page.NavigateOptions().setTimeout((double) properties.getTimeoutMs()));
+                return switch (candidate.getSelectorType()) {
+                    case "css", "css_class", "dom_path", "attribute", "tag" ->
+                            extractValuesByCssLike(page, fieldType, candidate.getSelectorValue());
+                    case "text" -> extractValuesByText(page, fieldType, candidate.getSelectorValue());
+                    default -> List.of();
+                };
+            }
+        } catch (Exception ex) {
+            throw new IllegalStateException("批量抽取失败: " + ex.getMessage(), ex);
+        }
+    }
+
     private BrowserType resolveBrowser(Playwright playwright) {
         return switch (properties.getBrowser().toLowerCase()) {
             case "firefox" -> playwright.firefox();
@@ -252,6 +273,32 @@ public class PlaywrightService {
             return null;
         }
         return readFieldValue(locator, fieldType);
+    }
+
+    private List<String> extractValuesByCssLike(Page page, String fieldType, String selector) {
+        var locator = page.locator(selector);
+        int count = locator.count();
+        List<String> values = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            String value = readFieldValue(locator.nth(i), fieldType);
+            if (value != null && !value.isBlank()) {
+                values.add(value.trim());
+            }
+        }
+        return values;
+    }
+
+    private List<String> extractValuesByText(Page page, String fieldType, String text) {
+        var locator = page.getByText(text);
+        int count = locator.count();
+        List<String> values = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            String value = readFieldValue(locator.nth(i), fieldType);
+            if (value != null && !value.isBlank()) {
+                values.add(value.trim());
+            }
+        }
+        return values;
     }
 
     private String readFieldValue(com.microsoft.playwright.Locator locator, String fieldType) {

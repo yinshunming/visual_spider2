@@ -15,9 +15,7 @@ import com.visualspider.persistence.PagePreviewSessionMapper;
 import com.visualspider.persistence.RuleArticleMappingMapper;
 import com.visualspider.persistence.RulePreviewFieldResultMapper;
 import com.visualspider.persistence.RulePreviewRunMapper;
-import com.visualspider.scheduler.CrawlTaskService;
 import com.visualspider.runtime.ListDiscoveryService;
-import com.visualspider.runtime.RuleVersionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -26,29 +24,21 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willDoNothing;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
-@WebMvcTest(CrawlTaskController.class)
-class CrawlTaskControllerWebMvcTest {
+@WebMvcTest(RuleDraftController.class)
+class ListDiscoveryControllerWebMvcTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
-    private CrawlTaskService crawlTaskService;
-
-    @MockBean
-    private RuleVersionService ruleVersionService;
-
+    @MockBean private com.visualspider.runtime.RuleDraftService ruleDraftService;
+    @MockBean private ListDiscoveryService listDiscoveryService;
     @MockBean private DatabaseProbeMapper databaseProbeMapper;
     @MockBean private PagePreviewSessionMapper pagePreviewSessionMapper;
     @MockBean private CrawlRuleMapper crawlRuleMapper;
@@ -59,38 +49,45 @@ class CrawlTaskControllerWebMvcTest {
     @MockBean private RulePreviewFieldResultMapper rulePreviewFieldResultMapper;
     @MockBean private ArticleMapper articleMapper;
     @MockBean private RuleArticleMappingMapper ruleArticleMappingMapper;
-    @MockBean private ListDiscoveryRunMapper listDiscoveryRunMapper;
-    @MockBean private ListDiscoveryItemMapper listDiscoveryItemMapper;
     @MockBean private CrawlTaskMapper crawlTaskMapper;
     @MockBean private CrawlRunLogMapper crawlRunLogMapper;
     @MockBean private CrawlSnapshotMapper crawlSnapshotMapper;
-    @MockBean private ListDiscoveryService listDiscoveryService;
+    @MockBean private ListDiscoveryRunMapper listDiscoveryRunMapper;
+    @MockBean private ListDiscoveryItemMapper listDiscoveryItemMapper;
 
     @Test
-    void shouldRenderTaskForm() throws Exception {
-        given(ruleVersionService.findPublishedVersionOptions()).willReturn(
-                List.of(new TaskOptionView(11L, "demo-rule", 1))
+    void shouldRenderListDiscoveryPage() throws Exception {
+        given(listDiscoveryService.preview(eq(1L), eq(9L))).willReturn(
+                new ListDiscoveryPageView(
+                        1L,
+                        9L,
+                        "nba-list-rule",
+                        "https://sports.sina.com.cn/nba/",
+                        List.of(
+                                new ListDiscoveryItemView(0, "News 1", "https://sports.sina.com.cn/nba/doc-1.shtml", "2026-04-15"),
+                                new ListDiscoveryItemView(1, "News 2", "https://sports.sina.com.cn/nba/doc-2.shtml", "2026-04-14")
+                        )
+                )
         );
 
-        mockMvc.perform(get("/admin/tasks/new"))
+        mockMvc.perform(get("/admin/rules/drafts/list-discovery")
+                        .param("previewSessionId", "1")
+                        .param("ruleId", "9"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("admin/task-form"))
-                .andExpect(model().attributeExists("taskForm"))
-                .andExpect(model().attributeExists("publishedVersions"));
+                .andExpect(view().name("admin/list-discovery"))
+                .andExpect(model().attributeExists("discoveryPage"));
     }
 
     @Test
-    void shouldRedirectAfterSave() throws Exception {
-        given(ruleVersionService.findPublishedVersionOptions()).willReturn(List.of());
-        given(crawlTaskService.saveTask(any())).willReturn(3L);
+    void shouldRenderReadableErrorWhenListDiscoveryFails() throws Exception {
+        given(listDiscoveryService.preview(eq(1L), eq(9L)))
+                .willThrow(new IllegalStateException("List discovery requires one ITEM_URL field"));
 
-        mockMvc.perform(post("/admin/tasks")
-                        .param("taskName", "demo-task")
-                        .param("urlTemplate", "https://www.sina.com.cn")
-                        .param("ruleVersionId", "11")
-                        .param("cronExpression", "0 0/5 * * * ?")
-                        .param("status", "ACTIVE"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/admin/tasks"));
+        mockMvc.perform(get("/admin/rules/drafts/list-discovery")
+                        .param("previewSessionId", "1")
+                        .param("ruleId", "9"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("admin/list-discovery"))
+                .andExpect(model().attribute("discoveryError", "List discovery requires one ITEM_URL field"));
     }
 }

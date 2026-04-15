@@ -10,9 +10,12 @@ import com.visualspider.persistence.CrawlTaskMapper;
 import com.visualspider.persistence.DatabaseProbeMapper;
 import com.visualspider.persistence.PagePreviewSessionMapper;
 import com.visualspider.persistence.ArticleMapper;
+import com.visualspider.persistence.ListDiscoveryItemMapper;
+import com.visualspider.persistence.ListDiscoveryRunMapper;
 import com.visualspider.persistence.RuleArticleMappingMapper;
 import com.visualspider.persistence.RulePreviewFieldResultMapper;
 import com.visualspider.persistence.RulePreviewRunMapper;
+import com.visualspider.runtime.ListDiscoveryService;
 import com.visualspider.runtime.ArticleIngestionService;
 import com.visualspider.runtime.ArticleMappingService;
 import org.junit.jupiter.api.Test;
@@ -78,6 +81,12 @@ class ArticleMappingControllerWebMvcTest {
     private ArticleMapper articleMapper;
 
     @MockBean
+    private ListDiscoveryRunMapper listDiscoveryRunMapper;
+
+    @MockBean
+    private ListDiscoveryItemMapper listDiscoveryItemMapper;
+
+    @MockBean
     private CrawlTaskMapper crawlTaskMapper;
 
     @MockBean
@@ -85,6 +94,9 @@ class ArticleMappingControllerWebMvcTest {
 
     @MockBean
     private CrawlSnapshotMapper crawlSnapshotMapper;
+
+    @MockBean
+    private ListDiscoveryService listDiscoveryService;
 
     @Test
     void shouldRenderArticleMappingPage() throws Exception {

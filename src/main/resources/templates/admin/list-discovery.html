@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>列表发现预览</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: "Segoe UI", "PingFang SC", sans-serif;
+            background: #f7f4ef;
+            color: #1f2937;
+        }
+
+        main {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 24px 20px 48px;
+        }
+
+        .card {
+            background: #fffdfa;
+            border: 1px solid #d8c9b8;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(139, 94, 52, 0.08);
+            margin-bottom: 18px;
+        }
+
+        .error {
+            color: #b91c1c;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eadfce;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: #f7f1e8;
+        }
+
+        a {
+            color: #8b5e34;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <section class="card">
+        <h1>列表发现预览</h1>
+        <p th:text="${discoveryPage.ruleName()} + ' | ' + ${discoveryPage.sourceUrl()}">rule | url</p>
+        <p>
+            <a th:href="@{/admin/rules/drafts/new(previewSessionId=${discoveryPage.previewSessionId()},ruleId=${discoveryPage.ruleId()})}">返回规则草稿</a>
+        </p>
+        <p class="error" th:if="${discoveryError}" th:text="${discoveryError}"></p>
+    </section>
+
+    <section class="card" th:if="${#lists.isEmpty(discoveryPage.items())}">
+        <p>当前没有发现任何列表项，请先配置 `ITEM_URL` 字段，并优先选择列表中的链接元素。</p>
+    </section>
+
+    <section class="card" th:if="${!#lists.isEmpty(discoveryPage.items())}">
+        <table>
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>标题</th>
+                <th>详情链接</th>
+                <th>时间文本</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${discoveryPage.items()}">
+                <td th:text="${item.itemIndex()}">0</td>
+                <td th:text="${item.titleText() != null and !item.titleText().isBlank() ? item.titleText() : '-'}">-</td>
+                <td>
+                    <a th:href="${item.detailUrl()}" th:text="${item.detailUrl()}" target="_blank" rel="noreferrer"></a>
+                </td>
+                <td th:text="${item.timeText() != null and !item.timeText().isBlank() ? item.timeText() : '-'}">-</td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+</main>
+</body>
+</html>

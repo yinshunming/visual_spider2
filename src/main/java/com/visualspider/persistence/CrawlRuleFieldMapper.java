@@ -17,6 +17,7 @@ public interface CrawlRuleFieldMapper {
                 rule_version_id,
                 field_name,
                 field_type,
+                field_role,
                 selected_tag_name,
                 selected_text,
                 dom_path
@@ -24,6 +25,7 @@ public interface CrawlRuleFieldMapper {
                 #{ruleVersionId},
                 #{fieldName},
                 #{fieldType},
+                #{fieldRole},
                 #{selectedTagName},
                 #{selectedText},
                 #{domPath}
@@ -38,6 +40,7 @@ public interface CrawlRuleFieldMapper {
                 rule_version_id,
                 field_name,
                 field_type,
+                field_role,
                 selected_tag_name,
                 selected_text,
                 dom_path,
@@ -50,6 +53,7 @@ public interface CrawlRuleFieldMapper {
             @Result(property = "ruleVersionId", column = "rule_version_id"),
             @Result(property = "fieldName", column = "field_name"),
             @Result(property = "fieldType", column = "field_type"),
+            @Result(property = "fieldRole", column = "field_role"),
             @Result(property = "selectedTagName", column = "selected_tag_name"),
             @Result(property = "selectedText", column = "selected_text"),
             @Result(property = "domPath", column = "dom_path"),
@@ -57,4 +61,3 @@ public interface CrawlRuleFieldMapper {
     })
     List<CrawlRuleField> findByRuleVersionId(Long ruleVersionId);
 }
-

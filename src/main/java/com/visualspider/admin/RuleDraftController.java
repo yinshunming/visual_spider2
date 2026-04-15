@@ -1,5 +1,6 @@
 package com.visualspider.admin;
 
+import com.visualspider.runtime.ListDiscoveryService;
 import com.visualspider.runtime.RuleDraftService;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
@@ -11,14 +12,18 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.util.List;
+
 @Controller
 @RequestMapping("/admin/rules/drafts")
 public class RuleDraftController {
 
     private final RuleDraftService ruleDraftService;
+    private final ListDiscoveryService listDiscoveryService;
 
-    public RuleDraftController(RuleDraftService ruleDraftService) {
+    public RuleDraftController(RuleDraftService ruleDraftService, ListDiscoveryService listDiscoveryService) {
         this.ruleDraftService = ruleDraftService;
+        this.listDiscoveryService = listDiscoveryService;
     }
 
     @GetMapping("/new")
@@ -59,5 +64,25 @@ public class RuleDraftController {
                     ruleDraftService.buildDraftPage(fieldForm.getPreviewSessionId(), fieldForm.getRuleId()));
             return "admin/rule-draft";
         }
+    }
+
+    @GetMapping("/list-discovery")
+    public String listDiscovery(@RequestParam Long previewSessionId,
+                                @RequestParam Long ruleId,
+                                Model model) {
+        try {
+            model.addAttribute("discoveryPage", listDiscoveryService.preview(previewSessionId, ruleId));
+            model.addAttribute("discoveryError", null);
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            model.addAttribute("discoveryPage", new ListDiscoveryPageView(
+                    previewSessionId,
+                    ruleId,
+                    "list-discovery",
+                    "",
+                    List.of()
+            ));
+            model.addAttribute("discoveryError", ex.getMessage());
+        }
+        return "admin/list-discovery";
     }
 }

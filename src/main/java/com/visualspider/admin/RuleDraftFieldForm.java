@@ -17,6 +17,9 @@ public class RuleDraftFieldForm {
     @NotBlank(message = "字段类型不能为空")
     private String fieldType = "TEXT";
 
+    @NotBlank(message = "字段角色不能为空")
+    private String fieldRole = "DETAIL";
+
     @NotBlank(message = "请先选择页面元素")
     private String selectedTagName;
 
@@ -70,6 +73,14 @@ public class RuleDraftFieldForm {
 
     public void setFieldType(String fieldType) {
         this.fieldType = fieldType;
+    }
+
+    public String getFieldRole() {
+        return fieldRole;
+    }
+
+    public void setFieldRole(String fieldRole) {
+        this.fieldRole = fieldRole;
     }
 
     public String getSelectedTagName() {
