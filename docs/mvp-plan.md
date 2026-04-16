@@ -1295,6 +1295,8 @@ Quartz 配置与限制：
 
 ### 13.4 里程碑 C：URL 规范化与去重增强
 
+状态：`done`
+
 目标：
 
 - 让新浪 NBA 新闻的重复链接不会因为参数、终端版本或跳转差异而重复入库
@@ -1317,7 +1319,24 @@ Quartz 配置与限制：
 1. 使用同一篇新闻的不同链接形式执行入库
 2. 确认 article 只保留一条记录
 
+本次实现结果：
+
+- 新增 `ArticleUrlNormalizer`，统一处理 canonical URL 优先、去掉 query/fragment、host 规范化
+- `ArticleIngestionService` 新增结构化入库结果 `ArticleIngestionResult`
+- 详情页入库时优先读取页面 canonical URL，再与抽取到的 `source_url` 和当前详情页 URL 做统一归一
+- 同一文章重复执行时不再盲目更新；当字段内容未变化时返回 `SKIPPED`
+
+验收记录：
+
+- `mvn "-Dmaven.resources.skip=true" "-Dtest=ArticleIngestionEnhancementsTest" test` 通过
+
+偏差说明：
+
+- 当前移动端/PC 链接归并主要依赖 canonical URL 和通用 URL 归一化，没有引入特定站点的硬编码规则表
+
 ### 13.5 里程碑 D：时间解析增强
+
+状态：`done`
 
 目标：
 
@@ -1341,7 +1360,20 @@ Quartz 配置与限制：
 2. 执行预览和入库
 3. 确认 `published_at` 成功写入
 
+本次实现结果：
+
+- 新增 `SinaDateTimeParser`
+- 支持 ISO、`yyyy-MM-dd HH:mm[:ss]`、`yyyy年MM月dd日 HH:mm[:ss]`
+- 支持 `今天 HH:mm`、`昨天 HH:mm`、`N分钟前`、`N小时前`
+- 统一按 `Asia/Shanghai` 语义解析并写入 `LocalDateTime`
+
+验收记录：
+
+- `mvn "-Dmaven.resources.skip=true" "-Dtest=SinaDateTimeParserTest,ArticleIngestionEnhancementsTest" test` 通过
+
 ### 13.6 里程碑 E：业务统计与排错增强
+
+状态：`done`
 
 目标：
 
@@ -1366,6 +1398,24 @@ Quartz 配置与限制：
 1. 执行一次新浪 NBA 抓取任务
 2. 查看运行详情页
 3. 确认能看到统计项与失败原因
+
+本次实现结果：
+
+- 新增 `list_rule_version_id` 到 `crawl_task`，允许任务选择“列表规则版本 + 详情规则版本”组合
+- 新增 migration `V9__add_list_rule_version_to_task.sql`
+- 新增 `BatchCrawlExecutionService`，为空时按单详情页执行，有列表规则时走“列表发现 -> 多详情页入库”
+- `CrawlTaskJob` 现在写入结构化统计 JSON，包括列表发现数、详情抓取数、article 新增/更新/跳过数、失败原因
+- `CrawlTaskController` 的运行详情页会读取 `extract-result` 快照 JSON 并渲染业务统计
+- 任务管理页切换到 `task-*-v2.html` 模板，补上列表规则版本配置入口和统计展示页
+
+验收记录：
+
+- `mvn "-Dmaven.resources.skip=true" "-Dtest=CrawlTaskControllerWebMvcTest,CrawlTaskServiceTest,VisualSpiderApplicationTests" test` 通过
+- `mvn "-Dmaven.resources.skip=true" -q -DskipTests compile` 通过
+
+偏差说明：
+
+- 统计信息当前保存在 `extract-result` 快照 JSON 中，而不是额外拆分到数据库列；这样避免在 13.6 阶段继续膨胀 `crawl_run_log`
 
 ### 13.7 推荐实施顺序
 

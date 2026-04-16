@@ -14,8 +14,8 @@ import java.util.List;
 public interface CrawlTaskMapper {
 
     @Insert("""
-            insert into crawl_task (task_name, url_template, rule_version_id, cron_expression, status)
-            values (#{taskName}, #{urlTemplate}, #{ruleVersionId}, #{cronExpression}, #{status})
+            insert into crawl_task (task_name, url_template, list_rule_version_id, rule_version_id, cron_expression, status)
+            values (#{taskName}, #{urlTemplate}, #{listRuleVersionId}, #{ruleVersionId}, #{cronExpression}, #{status})
             """)
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(CrawlTask task);
@@ -24,6 +24,7 @@ public interface CrawlTaskMapper {
             update crawl_task
             set task_name = #{taskName},
                 url_template = #{urlTemplate},
+                list_rule_version_id = #{listRuleVersionId},
                 rule_version_id = #{ruleVersionId},
                 cron_expression = #{cronExpression},
                 status = #{status},
@@ -33,13 +34,14 @@ public interface CrawlTaskMapper {
     int update(CrawlTask task);
 
     @Select("""
-            select id, task_name, url_template, rule_version_id, cron_expression, status, created_at, updated_at
+            select id, task_name, url_template, list_rule_version_id, rule_version_id, cron_expression, status, created_at, updated_at
             from crawl_task
             where id = #{id}
             """)
     @Results(id = "crawlTaskResult", value = {
             @Result(property = "taskName", column = "task_name"),
             @Result(property = "urlTemplate", column = "url_template"),
+            @Result(property = "listRuleVersionId", column = "list_rule_version_id"),
             @Result(property = "ruleVersionId", column = "rule_version_id"),
             @Result(property = "cronExpression", column = "cron_expression"),
             @Result(property = "createdAt", column = "created_at"),
@@ -48,13 +50,14 @@ public interface CrawlTaskMapper {
     CrawlTask findById(Long id);
 
     @Select("""
-            select id, task_name, url_template, rule_version_id, cron_expression, status, created_at, updated_at
+            select id, task_name, url_template, list_rule_version_id, rule_version_id, cron_expression, status, created_at, updated_at
             from crawl_task
             order by id desc
             """)
     @Results(id = "crawlTaskListResult", value = {
             @Result(property = "taskName", column = "task_name"),
             @Result(property = "urlTemplate", column = "url_template"),
+            @Result(property = "listRuleVersionId", column = "list_rule_version_id"),
             @Result(property = "ruleVersionId", column = "rule_version_id"),
             @Result(property = "cronExpression", column = "cron_expression"),
             @Result(property = "createdAt", column = "created_at"),
@@ -62,4 +65,3 @@ public interface CrawlTaskMapper {
     })
     List<CrawlTask> findAll();
 }
-

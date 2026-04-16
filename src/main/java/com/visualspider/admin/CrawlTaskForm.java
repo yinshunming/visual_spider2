@@ -13,6 +13,8 @@ public class CrawlTaskForm {
     @NotBlank(message = "URL 模板不能为空")
     private String urlTemplate;
 
+    private Long listRuleVersionId;
+
     @NotNull(message = "必须选择已发布版本")
     private Long ruleVersionId;
 
@@ -45,6 +47,14 @@ public class CrawlTaskForm {
         this.urlTemplate = urlTemplate;
     }
 
+    public Long getListRuleVersionId() {
+        return listRuleVersionId;
+    }
+
+    public void setListRuleVersionId(Long listRuleVersionId) {
+        this.listRuleVersionId = listRuleVersionId;
+    }
+
     public Long getRuleVersionId() {
         return ruleVersionId;
     }
@@ -69,4 +79,3 @@ public class CrawlTaskForm {
         this.status = status;
     }
 }
-

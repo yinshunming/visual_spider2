@@ -64,6 +64,7 @@ public class CrawlTaskService {
 
     @Transactional
     public Long saveTask(CrawlTask task) {
+        validatePublishedVersion(task.getListRuleVersionId());
         validatePublishedVersion(task.getRuleVersionId());
         if (task.getId() == null) {
             crawlTaskMapper.insert(task);
@@ -85,6 +86,7 @@ public class CrawlTaskService {
     @Transactional
     public void activateTask(Long taskId) {
         CrawlTask task = requireTask(taskId);
+        validatePublishedVersion(task.getListRuleVersionId());
         validatePublishedVersion(task.getRuleVersionId());
         task.setStatus("ACTIVE");
         crawlTaskMapper.update(task);
@@ -92,6 +94,9 @@ public class CrawlTaskService {
     }
 
     private void validatePublishedVersion(Long ruleVersionId) {
+        if (ruleVersionId == null) {
+            return;
+        }
         CrawlRuleVersion version = crawlRuleVersionMapper.findById(ruleVersionId);
         if (version == null || !"PUBLISHED".equalsIgnoreCase(version.getStatus())) {
             throw new IllegalStateException("任务只能绑定已发布版本");
@@ -155,4 +160,3 @@ public class CrawlTaskService {
         return new TriggerKey("crawlTaskTrigger-" + taskId);
     }
 }
-

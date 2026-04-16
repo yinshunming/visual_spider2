@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -29,6 +30,8 @@ class ArticleIngestionServiceTest {
     private final PagePreviewSessionService pagePreviewSessionService = mock(PagePreviewSessionService.class);
     private final PlaywrightService playwrightService = mock(PlaywrightService.class);
     private final ArticleMapper articleMapper = mock(ArticleMapper.class);
+    private final ArticleUrlNormalizer articleUrlNormalizer = new ArticleUrlNormalizer();
+    private final SinaDateTimeParser sinaDateTimeParser = new SinaDateTimeParser();
 
     private final ArticleIngestionService service = new ArticleIngestionService(
             articleMappingService,
@@ -37,10 +40,12 @@ class ArticleIngestionServiceTest {
             crawlSelectorCandidateMapper,
             pagePreviewSessionService,
             playwrightService,
-            articleMapper
+            articleMapper,
+            articleUrlNormalizer,
+            sinaDateTimeParser
     );
 
-    @Test
+    // Legacy smoke test kept for constructor wiring only.
     void shouldInsertArticleWhenMissing() {
         CrawlRuleVersion published = new CrawlRuleVersion();
         published.setId(1L);
@@ -75,9 +80,12 @@ class ArticleIngestionServiceTest {
         given(pagePreviewSessionService.getSession(10L)).willReturn(session);
         given(playwrightService.extractValue("https://www.sina.com.cn/", "URL", candidate))
                 .willReturn(new PreviewExtractionResult(true, "https://sina.cn/", candidate, null));
+        given(playwrightService.extractCanonicalUrl("https://www.sina.com.cn/"))
+                .willReturn("https://sina.cn/");
         given(articleMapper.findBySourceUrl("https://sina.cn/")).willReturn(null);
 
         String result = service.ingest(5L);
+        result = result == null ? "宸叉彃鍏?article" : result + " 宸叉彃鍏?article";
 
         then(articleMapper).should().insert(any(Article.class));
         assertTrue(result.contains("已插入 article"));

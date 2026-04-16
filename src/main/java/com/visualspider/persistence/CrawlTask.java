@@ -7,6 +7,7 @@ public class CrawlTask {
     private Long id;
     private String taskName;
     private String urlTemplate;
+    private Long listRuleVersionId;
     private Long ruleVersionId;
     private String cronExpression;
     private String status;
@@ -35,6 +36,14 @@ public class CrawlTask {
 
     public void setUrlTemplate(String urlTemplate) {
         this.urlTemplate = urlTemplate;
+    }
+
+    public Long getListRuleVersionId() {
+        return listRuleVersionId;
+    }
+
+    public void setListRuleVersionId(Long listRuleVersionId) {
+        this.listRuleVersionId = listRuleVersionId;
     }
 
     public Long getRuleVersionId() {
@@ -77,4 +86,3 @@ public class CrawlTask {
         this.updatedAt = updatedAt;
     }
 }
-

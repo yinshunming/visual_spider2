@@ -74,7 +74,7 @@ class CrawlTaskControllerWebMvcTest {
 
         mockMvc.perform(get("/admin/tasks/new"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("admin/task-form"))
+                .andExpect(view().name("admin/task-form-v2"))
                 .andExpect(model().attributeExists("taskForm"))
                 .andExpect(model().attributeExists("publishedVersions"));
     }

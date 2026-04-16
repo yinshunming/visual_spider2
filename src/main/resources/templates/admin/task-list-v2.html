@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>抓取任务</title>
+</head>
+<body>
+<main>
+    <h1>抓取任务</h1>
+    <p><a href="/admin">返回首页</a> | <a href="/admin/tasks/new">创建任务</a></p>
+    <div th:if="${#lists.isEmpty(tasks)}">当前还没有任务。请先完成规则发布和 article 映射，再创建抓取任务。</div>
+    <table th:if="${!#lists.isEmpty(tasks)}">
+        <thead><tr><th>ID</th><th>名称</th><th>URL</th><th>列表规则版本</th><th>详情规则版本</th><th>Cron</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody>
+        <tr th:each="task : ${tasks}">
+            <td th:text="${task.id()}"></td>
+            <td th:text="${task.taskName()}"></td>
+            <td th:text="${task.urlTemplate()}"></td>
+            <td th:text="${task.listRuleVersionId() != null ? task.listRuleVersionId() : '-'}"></td>
+            <td th:text="${task.ruleVersionId()}"></td>
+            <td th:text="${task.cronExpression()}"></td>
+            <td th:text="${task.status()}"></td>
+            <td>
+                <form method="post" th:action="@{/admin/tasks/{id}/pause(id=${task.id()})}" th:if="${task.status() == 'ACTIVE'}"><button type="submit">暂停</button></form>
+                <form method="post" th:action="@{/admin/tasks/{id}/activate(id=${task.id()})}" th:if="${task.status() != 'ACTIVE'}"><button type="submit">启用</button></form>
+                <a th:href="@{/admin/tasks/{id}/runs(id=${task.id()})}">运行记录</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+</body>
+</html>

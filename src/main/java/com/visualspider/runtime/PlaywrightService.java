@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
+import java.net.URI;
 
 @Service
 public class PlaywrightService {
@@ -236,6 +237,27 @@ public class PlaywrightService {
             }
         } catch (Exception ex) {
             throw new IllegalStateException("批量抽取失败: " + ex.getMessage(), ex);
+        }
+    }
+
+    public String extractCanonicalUrl(String url) {
+        try (Playwright playwright = Playwright.create()) {
+            BrowserType browserType = resolveBrowser(playwright);
+            Browser browser = browserType.launch(new BrowserType.LaunchOptions().setHeadless(properties.isHeadless()));
+            try (browser) {
+                Page page = browser.newPage();
+                page.navigate(url, new Page.NavigateOptions().setTimeout((double) properties.getTimeoutMs()));
+                String canonical = page.locator("link[rel='canonical']").first().getAttribute("href");
+                if (canonical == null || canonical.isBlank()) {
+                    canonical = page.locator("meta[property='og:url']").first().getAttribute("content");
+                }
+                if (canonical == null || canonical.isBlank()) {
+                    return page.url();
+                }
+                return URI.create(page.url()).resolve(canonical).toString();
+            }
+        } catch (Exception ex) {
+            return url;
         }
     }
 

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>运行详情</title>
+</head>
+<body>
+<main>
+    <h1 th:text="${'运行 #' + runDetail.runId()}"></h1>
+    <p><a href="/admin/tasks">返回任务列表</a></p>
+    <p th:text="${'状态：' + runDetail.status()}"></p>
+    <p th:text="${'来源 URL：' + runDetail.sourceUrl()}"></p>
+    <p th:text="${'耗时：' + runDetail.durationMs()}"></p>
+    <p th:text="${'开始时间：' + runDetail.startedAtText()}"></p>
+    <p th:text="${'结束时间：' + runDetail.finishedAtText()}"></p>
+    <p th:text="${'错误：' + runDetail.errorMessage()}"></p>
+
+    <section th:if="${runDetail.stats() != null}">
+        <h2>业务统计</h2>
+        <ul>
+            <li th:text="${'模式：' + runDetail.stats().mode()}"></li>
+            <li th:text="${'列表发现数：' + runDetail.stats().listDiscoveryCount()}"></li>
+            <li th:text="${'详情抓取数：' + runDetail.stats().detailCount()}"></li>
+            <li th:text="${'article 新增数：' + runDetail.stats().articleInsertedCount()}"></li>
+            <li th:text="${'article 更新数：' + runDetail.stats().articleUpdatedCount()}"></li>
+            <li th:text="${'article 跳过数：' + runDetail.stats().articleSkippedCount()}"></li>
+            <li th:text="${'失败数：' + runDetail.stats().failureCount()}"></li>
+        </ul>
+        <div th:if="${!#lists.isEmpty(runDetail.stats().failureReasons())}">
+            <h3>失败原因</h3>
+            <ul>
+                <li th:each="reason : ${runDetail.stats().failureReasons()}" th:text="${reason}"></li>
+            </ul>
+        </div>
+    </section>
+
+    <h2>快照索引</h2>
+    <ul>
+        <li th:each="snapshot : ${runDetail.snapshots()}" th:text="${snapshot.snapshotType()} + ' -> ' + ${snapshot.filePath()}"></li>
+    </ul>
+    <div th:if="${#lists.isEmpty(runDetail.snapshots())}">当前没有快照索引，可能本次任务执行尚未写入快照。</div>
+</main>
+</body>
+</html>

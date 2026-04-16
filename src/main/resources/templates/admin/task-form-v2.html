@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>创建抓取任务</title>
+</head>
+<body>
+<main>
+    <h1>创建抓取任务</h1>
+    <p><a href="/admin/tasks">返回任务列表</a></p>
+    <form method="post" th:action="@{/admin/tasks}" th:object="${taskForm}">
+        <label>任务名称 <input th:field="*{taskName}" type="text"></label><br>
+        <label>列表页 URL <input th:field="*{urlTemplate}" type="text" placeholder="https://sports.sina.com.cn/nba/"></label><br>
+        <label>列表规则版本（可选）
+            <select th:field="*{listRuleVersionId}">
+                <option value="">不使用列表规则，按单详情页执行</option>
+                <option th:each="option : ${publishedVersions}" th:value="${option.versionId()}" th:text="${option.ruleName()} + ' v' + ${option.versionNo()}"></option>
+            </select>
+        </label><br>
+        <label>详情规则版本
+            <select th:field="*{ruleVersionId}">
+                <option value="">请选择</option>
+                <option th:each="option : ${publishedVersions}" th:value="${option.versionId()}" th:text="${option.ruleName()} + ' v' + ${option.versionNo()}"></option>
+            </select>
+        </label><br>
+        <div th:if="${#lists.isEmpty(publishedVersions)}">当前没有可用的已发布版本，请先发布规则版本。</div>
+        <label>Cron 表达式 <input th:field="*{cronExpression}" type="text" placeholder="0 0/5 * * * ?"></label><br>
+        <label>状态
+            <select th:field="*{status}">
+                <option value="ACTIVE">ACTIVE</option>
+                <option value="PAUSED">PAUSED</option>
+            </select>
+        </label><br>
+        <button type="submit">保存任务</button>
+    </form>
+</main>
+</body>
+</html>

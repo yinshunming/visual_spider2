@@ -10,6 +10,7 @@ import com.visualspider.persistence.CrawlSelectorCandidateMapper;
 import com.visualspider.persistence.PagePreviewSession;
 import com.visualspider.persistence.RuleArticleMapping;
 import com.visualspider.persistence.RuleArticleMappingMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,8 @@ public class ArticleIngestionService {
     private final PagePreviewSessionService pagePreviewSessionService;
     private final PlaywrightService playwrightService;
     private final ArticleMapper articleMapper;
+    private final ArticleUrlNormalizer articleUrlNormalizer;
+    private final SinaDateTimeParser sinaDateTimeParser;
 
     public ArticleIngestionService(ArticleMappingService articleMappingService,
                                    RuleArticleMappingMapper ruleArticleMappingMapper,
@@ -38,6 +41,27 @@ public class ArticleIngestionService {
                                    PagePreviewSessionService pagePreviewSessionService,
                                    PlaywrightService playwrightService,
                                    ArticleMapper articleMapper) {
+        this(articleMappingService,
+                ruleArticleMappingMapper,
+                crawlRuleFieldMapper,
+                crawlSelectorCandidateMapper,
+                pagePreviewSessionService,
+                playwrightService,
+                articleMapper,
+                new ArticleUrlNormalizer(),
+                new SinaDateTimeParser());
+    }
+
+    @Autowired
+    public ArticleIngestionService(ArticleMappingService articleMappingService,
+                                   RuleArticleMappingMapper ruleArticleMappingMapper,
+                                   CrawlRuleFieldMapper crawlRuleFieldMapper,
+                                   CrawlSelectorCandidateMapper crawlSelectorCandidateMapper,
+                                   PagePreviewSessionService pagePreviewSessionService,
+                                   PlaywrightService playwrightService,
+                                   ArticleMapper articleMapper,
+                                   ArticleUrlNormalizer articleUrlNormalizer,
+                                   SinaDateTimeParser sinaDateTimeParser) {
         this.articleMappingService = articleMappingService;
         this.ruleArticleMappingMapper = ruleArticleMappingMapper;
         this.crawlRuleFieldMapper = crawlRuleFieldMapper;
@@ -45,12 +69,14 @@ public class ArticleIngestionService {
         this.pagePreviewSessionService = pagePreviewSessionService;
         this.playwrightService = playwrightService;
         this.articleMapper = articleMapper;
+        this.articleUrlNormalizer = articleUrlNormalizer;
+        this.sinaDateTimeParser = sinaDateTimeParser;
     }
 
     @Transactional
     public String ingest(Long ruleId) {
         CrawlRuleVersion published = articleMappingService.requirePublishedVersion(ruleId);
-        return ingestByPublishedVersion(published.getId(), resolveSourceUrl(published));
+        return ingestArticleByPublishedVersion(published.getId(), resolveSourceUrl(published)).message();
     }
 
     @Transactional
@@ -103,6 +129,76 @@ public class ArticleIngestionService {
         return "已更新 article，ID=" + article.getId() + "，source_url=" + article.getSourceUrl();
     }
 
+    @Transactional
+    public ArticleIngestionResult ingestArticleByPublishedVersion(Long ruleVersionId, String sourcePageUrl) {
+        CrawlRuleVersion published = findPublishedVersion(ruleVersionId);
+        List<RuleArticleMapping> mappings = ruleArticleMappingMapper.findByRuleVersionId(published.getId());
+        if (mappings.isEmpty()) {
+            throw new IllegalStateException("Article mapping is not configured");
+        }
+
+        if (sourcePageUrl == null || sourcePageUrl.isBlank()) {
+            PagePreviewSession previewSession = pagePreviewSessionService.getSession(published.getSourcePreviewSessionId());
+            sourcePageUrl = previewSession.getFinalUrl() != null ? previewSession.getFinalUrl() : previewSession.getRequestedUrl();
+        }
+
+        Map<String, String> values = new HashMap<>();
+        for (RuleArticleMapping mapping : mappings) {
+            CrawlRuleField field = findField(published.getId(), mapping.getFieldId());
+            CrawlSelectorCandidate candidate = selectBestCandidate(field);
+            PreviewExtractionResult extraction = playwrightService.extractValue(sourcePageUrl, field.getFieldType(), candidate);
+            if (extraction.success()) {
+                values.put(mapping.getArticleColumn(), extraction.extractedValue());
+            }
+        }
+
+        String sourceUrl = articleUrlNormalizer.normalize(
+                values.get("source_url"),
+                playwrightService.extractCanonicalUrl(sourcePageUrl),
+                sourcePageUrl
+        );
+        if (sourceUrl == null || sourceUrl.isBlank()) {
+            throw new IllegalStateException("source_url extraction is empty");
+        }
+
+        Article article = articleMapper.findBySourceUrl(sourceUrl);
+        boolean inserted = article == null;
+        if (article == null) {
+            article = new Article();
+        }
+
+        String previousTitle = article.getTitle();
+        String previousAuthor = article.getAuthor();
+        LocalDateTime previousPublishedAt = article.getPublishedAt();
+        String previousSummary = article.getSummary();
+        String previousContent = article.getContent();
+        String previousCoverImage = article.getCoverImage();
+
+        article.setSourceUrl(sourceUrl);
+        article.setTitle(values.get("title"));
+        article.setAuthor(values.get("author"));
+        article.setPublishedAt(sinaDateTimeParser.parse(values.get("published_at")));
+        article.setSummary(values.get("summary"));
+        article.setContent(values.get("content"));
+        article.setCoverImage(values.get("cover_image"));
+
+        if (inserted) {
+            articleMapper.insert(article);
+            return ArticleIngestionResult.inserted(article.getSourceUrl(), "Inserted article: " + article.getSourceUrl());
+        }
+        if (sameValue(previousTitle, article.getTitle())
+                && sameValue(previousAuthor, article.getAuthor())
+                && sameValue(previousPublishedAt, article.getPublishedAt())
+                && sameValue(previousSummary, article.getSummary())
+                && sameValue(previousContent, article.getContent())
+                && sameValue(previousCoverImage, article.getCoverImage())) {
+            return ArticleIngestionResult.skipped(article.getSourceUrl(), "Skipped unchanged article: " + article.getSourceUrl());
+        }
+
+        articleMapper.update(article);
+        return ArticleIngestionResult.updated(article.getSourceUrl(), "Updated article: " + article.getSourceUrl());
+    }
+
     private String resolveSourceUrl(CrawlRuleVersion published) {
         List<RuleArticleMapping> mappings = ruleArticleMappingMapper.findByRuleVersionId(published.getId());
         PagePreviewSession previewSession = pagePreviewSessionService.getSession(published.getSourcePreviewSessionId());
@@ -152,5 +248,9 @@ public class ArticleIngestionService {
         } catch (DateTimeParseException ignored) {
         }
         return null;
+    }
+
+    private boolean sameValue(Object left, Object right) {
+        return left == null ? right == null : left.equals(right);
     }
 }

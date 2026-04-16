@@ -10,7 +10,7 @@ public record TaskRunDetailView(
         String errorMessage,
         String startedAtText,
         String finishedAtText,
+        TaskRunStatsView stats,
         List<TaskSnapshotView> snapshots
 ) {
 }
-

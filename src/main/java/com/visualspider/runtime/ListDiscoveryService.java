@@ -58,41 +58,21 @@ public class ListDiscoveryService {
         CrawlRuleVersion draftVersion = requireDraftVersion(ruleId);
         PagePreviewSession previewSession = requirePreviewSession(previewSessionId);
         String sourceUrl = previewSession.getFinalUrl() != null ? previewSession.getFinalUrl() : previewSession.getRequestedUrl();
-
-        CrawlRuleField titleField = findFieldByRole(draftVersion.getId(), "ITEM_TITLE");
-        CrawlRuleField urlField = findFieldByRole(draftVersion.getId(), "ITEM_URL");
-        CrawlRuleField timeField = findFieldByRole(draftVersion.getId(), "ITEM_TIME");
-
-        if (urlField == null) {
-            throw new IllegalStateException("List discovery requires one ITEM_URL field");
-        }
-
-        List<String> titleValues = titleField == null ? List.of() : extractValues(sourceUrl, titleField);
-        List<String> urlValues = extractValues(sourceUrl, urlField);
-        List<String> timeValues = timeField == null ? List.of() : extractValues(sourceUrl, timeField);
+        List<ListDiscoveryItemView> items = discoverItems(draftVersion.getId(), sourceUrl);
 
         ListDiscoveryRun run = new ListDiscoveryRun();
         run.setRuleVersionId(draftVersion.getId());
         run.setSourceUrl(sourceUrl);
         listDiscoveryRunMapper.insert(run);
 
-        int max = Math.max(urlValues.size(), Math.max(titleValues.size(), timeValues.size()));
-        List<ListDiscoveryItemView> items = new ArrayList<>();
-        for (int index = 0; index < max; index++) {
-            String detailUrl = valueAt(urlValues, index);
-            if (detailUrl == null || detailUrl.isBlank()) {
-                continue;
-            }
-
+        for (ListDiscoveryItemView itemView : items) {
             ListDiscoveryItem item = new ListDiscoveryItem();
             item.setRunId(run.getId());
-            item.setItemIndex(index);
-            item.setTitleText(valueAt(titleValues, index));
-            item.setDetailUrl(detailUrl);
-            item.setTimeText(valueAt(timeValues, index));
+            item.setItemIndex(itemView.itemIndex());
+            item.setTitleText(itemView.titleText());
+            item.setDetailUrl(itemView.detailUrl());
+            item.setTimeText(itemView.timeText());
             listDiscoveryItemMapper.insert(item);
-
-            items.add(new ListDiscoveryItemView(index, item.getTitleText(), item.getDetailUrl(), item.getTimeText()));
         }
 
         return new ListDiscoveryPageView(
@@ -102,6 +82,39 @@ public class ListDiscoveryService {
                 sourceUrl,
                 items
         );
+    }
+
+    public List<ListDiscoveryItemView> discoverByPublishedVersion(Long ruleVersionId, String sourceUrl) {
+        CrawlRuleVersion version = crawlRuleVersionMapper.findById(ruleVersionId);
+        if (version == null || !"PUBLISHED".equalsIgnoreCase(version.getStatus())) {
+            throw new IllegalStateException("List discovery requires a published list rule version");
+        }
+        return discoverItems(ruleVersionId, sourceUrl);
+    }
+
+    private List<ListDiscoveryItemView> discoverItems(Long ruleVersionId, String sourceUrl) {
+        CrawlRuleField titleField = findFieldByRole(ruleVersionId, "ITEM_TITLE");
+        CrawlRuleField urlField = findFieldByRole(ruleVersionId, "ITEM_URL");
+        CrawlRuleField timeField = findFieldByRole(ruleVersionId, "ITEM_TIME");
+
+        if (urlField == null) {
+            throw new IllegalStateException("List discovery requires one ITEM_URL field");
+        }
+
+        List<String> titleValues = titleField == null ? List.of() : extractValues(sourceUrl, titleField);
+        List<String> urlValues = extractValues(sourceUrl, urlField);
+        List<String> timeValues = timeField == null ? List.of() : extractValues(sourceUrl, timeField);
+
+        int max = Math.max(urlValues.size(), Math.max(titleValues.size(), timeValues.size()));
+        List<ListDiscoveryItemView> items = new ArrayList<>();
+        for (int index = 0; index < max; index++) {
+            String detailUrl = valueAt(urlValues, index);
+            if (detailUrl == null || detailUrl.isBlank()) {
+                continue;
+            }
+            items.add(new ListDiscoveryItemView(index, valueAt(titleValues, index), detailUrl, valueAt(timeValues, index)));
+        }
+        return items;
     }
 
     private List<String> extractValues(String sourceUrl, CrawlRuleField field) {
