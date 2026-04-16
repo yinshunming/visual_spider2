@@ -136,12 +136,12 @@ public class PlaywrightService {
                               };
                             })
                             .filter(item => item.text.length >= 2)
-                            .filter(item => item.widthPercent > 0.6 && item.heightPercent > 0.18)
+                            .filter(item => item.widthPercent > 0.2 && item.heightPercent > 0.08)
                             .filter(item => ['h1','h2','h3','h4','p','span','a','time','div','article','section','li'].includes(item.tagName))
                             .filter(item => item.text.length <= 260)
-                            .filter(item => item.area <= 260000)
+                            .filter(item => item.area <= 400000)
                             .filter(item => item.tagName !== 'section' && item.tagName !== 'article')
-                            .filter(item => item.tagName !== 'div' || (item.text.length >= 2 && item.text.length <= 90 && item.childCount <= 5))
+                            .filter(item => item.tagName !== 'div' || (item.text.length >= 2 && item.text.length <= 200 && item.childCount <= 12))
                             .sort((a, b) => {
                               const score = (item) => {
                                 const topBonus = Math.max(0, 120 - item.topPercent) * 100;
